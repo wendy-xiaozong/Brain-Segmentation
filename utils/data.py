@@ -54,6 +54,8 @@ class Subjects(object):
 
 
 def get_objects(files, path=path):
+    print("file:", files)
+    print("path:", path)
     subjects_dict = {"train": [], "val": []}
     # files files = {"train": data_list[:train_subjects], "val": data_list[train_subjects:]}
     for key in files.keys():
