@@ -5,7 +5,7 @@ import os
 import pickle
 from random import shuffle
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.flags.FLAGS
 path = "./dataset"
 data_list = ["1", "4", "5", "7", "14", "070", "148"]
 

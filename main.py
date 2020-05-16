@@ -4,9 +4,9 @@ from random import randint
 import numpy as np
 from time import time
 
-from utils.data import get_dataset
+from .utils.data import get_dataset
 
-FLAGS = tf.app.flags.FLAGS  # to get argument from cmd
+FLAGS = tf.compat.v1.flags.FLAGS  # to get argument from cmd
 
 
 def train(patch_size):
