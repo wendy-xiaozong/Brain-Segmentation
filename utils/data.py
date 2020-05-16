@@ -1,9 +1,10 @@
-import SimpleITK as sitk
-import tensorflow as tf
-import sys
 import os
 import pickle
 from random import shuffle
+
+from . import config
+import SimpleITK as sitk
+import tensorflow as tf
 
 FLAGS = tf.compat.v1.flags.FLAGS
 path = "./dataset"
@@ -106,4 +107,4 @@ def get_dataset():
 
 
 if __name__ == '__main__':
-  get_dataset()
+    get_dataset()
