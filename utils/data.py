@@ -7,7 +7,7 @@ import SimpleITK as sitk
 import tensorflow as tf
 
 FLAGS = tf.compat.v1.flags.FLAGS
-path = "./dataset"
+path = "./training"
 data_list = ["1", "4", "5", "7", "14", "070", "148"]
 
 
