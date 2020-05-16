@@ -1,14 +1,17 @@
 #!/bin/bash
-#SBATCH --gres=gpu:v100l:1  # request GPU "generic resource"
-#SBATCH --cpus-per-task=8   # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
+#SBATCH --gres=gpu:p100:1  # request GPU "generic resource"
+#SBATCH --cpus-per-task=6   # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=32000M        # memory per node
 #SBATCH --output=data-path.out  # %N for node name, %j for jobID
+#SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
+#SBATCH --mail-type=ALL
 
-work_dir=$(pwd)
+
+work_dir=$(pwd)  # /home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Code
 MAIN_DIR=${work_dir%/*}
 MAIN_DIR=${MAIN_DIR%/*}
-DATA_DIR="$MAIN_DIR/Datasets/MRBrainS18"
-FILES_CHECKPOINT="$work_dir/train/run_$RUN/checkpoints/run_${RUN}_data.p"
+DATA_DIR="$MAIN_DIR/MRBrainS18/Data"
+FILES_CHECKPOINT="$work_dir/run_$RUN/checkpoints/run_${RUN}_data.p"
 TRAIN_SUBJECTS=5
 MODEL="cnn_3d_1"
 LOSS_TYPE="log_loss"
