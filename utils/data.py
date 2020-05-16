@@ -7,7 +7,7 @@ import SimpleITK as sitk
 import tensorflow as tf
 
 FLAGS = tf.compat.v1.flags.FLAGS
-path = "./training"
+path = "../Data/training"
 data_list = ["1", "4", "5", "7", "14", "070", "148"]
 
 
@@ -49,7 +49,6 @@ class Subjects(object):
 
 
 def get_objects(files, path=path):
-    print(FLAGS.data_dir)
     print("path:", path)
     subjects_dict = {"train": [], "val": []}
     # files files = {"train": data_list[:train_subjects], "val": data_list[train_subjects:]}
