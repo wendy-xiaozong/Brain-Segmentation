@@ -42,14 +42,17 @@ class Subjects(object):
                                                      self.path)
 
     def add_dims_3d(self):
-        self.label_shape = tuple([1] + list(self.shape) + [11])
-        print(self.label_shape)
-        self.shape = tuple([1] + list(self.shape) + [1])
-        print(self.shape)
+        self.label_shape = tuple([1] + list(self.shape) + [11])  # (1, 48, 240, 240, 11)
+        self.shape = tuple([1] + list(self.shape) + [1])  # (1, 48, 240, 240, 1)
+        print("before flair_array:", self.flair_array.shape)
         self.flair_array = np.reshape(self.flair_array, self.shape)
+        print("after flair_array:", self.flair_array.shape)
         self.t1_array = np.reshape(self.t1_array, self.shape)
         self.ir_array = np.reshape(self.ir_array, self.shape)
+        print("before label_array:", self.label_array.shape)
         self.label_array = one_hot_encode(self.label_array, self.label_shape)
+        print("after label_array:", self.label_array.shape)
+
 
 
 def get_objects(files, path=path):
@@ -97,14 +100,26 @@ def load_files_order(checkpoint):
 
 def add_extra_dims(subjects_dict, dims=3):
     for key in subjects_dict.keys():
-        n_files = len(subjects_dict[key])
-        print("n_file:", n_files)
         print("key:", key)
+        n_files = len(subjects_dict[key])
         for n in range(n_files):
             subject = subjects_dict[key][n]
-            print("n:", n)
             if dims == 3:
                 subject.add_dims_3d()
+
+
+def one_hot_encode(array, shape):
+    array += 1
+    channels = shape[-1]
+    array = np.repeat(array, channels)
+    print("before array", array.shape)
+    array = np.reshape(array, shape)
+    print("after array", array.shape)
+    array = array / np.arange(1, channels + 1)
+    
+    array[array > 1] = 0
+    array[array < 1] = 0
+    return array
 
 
 def get_dataset():
