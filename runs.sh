@@ -10,7 +10,7 @@
 work_dir=$(pwd)  # /home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Code
 MAIN_DIR=${work_dir%/*}
 MAIN_DIR=${MAIN_DIR%/*}
-DATA_DIR="$MAIN_DIR/MRBrainS18/Data"
+DATA_DIR="$MAIN_DIR/MRBrainS18/Data/training" # The dataset folder
 FILES_CHECKPOINT="$work_dir/run_$RUN/checkpoints/run_${RUN}_data.p"
 TRAIN_SUBJECTS=5
 MODEL="cnn_3d_1"
