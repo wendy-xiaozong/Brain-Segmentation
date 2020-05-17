@@ -5,14 +5,14 @@ from random import shuffle
 import config
 import SimpleITK as sitk
 import tensorflow as tf
+import numpy as np
 
 FLAGS = tf.compat.v1.flags.FLAGS
 path = "../Data/training"
-data_list = ["1", "4", "5", "7", "14", "070", "148"] # "1", "4", "5", "7", "14" train,  "070", "148" validation
+data_list = ["1", "4", "5", "7", "14", "070", "148"]  # "1", "4", "5", "7", "14" train,  "070", "148" validation
 
 
 class Subjects(object):
-
     def __init__(self, name, path):
         self.name = name
         self.path = path
@@ -35,17 +35,21 @@ class Subjects(object):
         self.ir_array = sitk.GetArrayFromImage(self.ir_img)
         self.label_array = sitk.GetArrayFromImage(self.label_img)
         self.shape = self.flair_array.shape
-        print("get shape:", self.shape)
-        self.spacing = self.flair_img.GetSpacing()  #
-        print("get spacing:", self.spacing)
-        self.origin = self.flair_img.GetOrigin()
-        print("get origin:", self.origin)
-        self.direction = self.flair_img.GetDirection()
-        print("get direction:", self.direction)
+        print("get data! path:", path)
 
     def __str__(self):
         return "Subject: {}\nData path: {}\n".format(self.name,
                                                      self.path)
+
+    def add_dims_3d(self):
+        self.label_shape = tuple([1] + list(self.shape) + [11])
+        print(self.label_shape)
+        self.shape = tuple([1] + list(self.shape) + [1])
+        print(self.shape)
+        self.flair_array = np.reshape(self.flair_array, self.shape)
+        self.t1_array = np.reshape(self.t1_array, self.shape)
+        self.ir_array = np.reshape(self.ir_array, self.shape)
+        self.label_array = one_hot_encode(self.label_array, self.label_shape)
 
 
 def get_objects(files, path=path):
@@ -91,13 +95,25 @@ def load_files_order(checkpoint):
     return files
 
 
+def add_extra_dims(subjects_dict, dims=3):
+    for key in subjects_dict.keys():
+        n_files = len(subjects_dict[key])
+        print("n_file:", n_files)
+        print("key:", key)
+        for n in range(n_files):
+            subject = subjects_dict[key][n]
+            print("n:", n)
+            if dims == 3:
+                subject.add_dims_3d()
+
+
 def get_dataset():
     # get a dict to save where we run
     dataset_files = get_files(checkpoint=FLAGS.files_checkpoint,  # $work_dir/train/run_$RUN/checkpoints/run_${
                               # RUN}_data.p
                               train_subjects=FLAGS.train_subjects)  # 5
     dataset = get_objects(dataset_files)
-    # add_extra_dims(dataset)
+    add_extra_dims(dataset)
     return dataset
 
 
