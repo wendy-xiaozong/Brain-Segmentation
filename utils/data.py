@@ -8,7 +8,7 @@ import tensorflow as tf
 
 FLAGS = tf.compat.v1.flags.FLAGS
 path = "../Data/training"
-data_list = ["1", "4", "5", "7", "14", "070", "148"]
+data_list = ["1", "4", "5", "7", "14", "070", "148"] # "1", "4", "5", "7", "14" train,  "070", "148" validation
 
 
 class Subjects(object):

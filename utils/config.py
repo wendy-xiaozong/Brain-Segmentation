@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-tf.app.flags.DEFINE_string('data_dir', '/home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Data/training',
-                           """ Directory where to find the dataset.""")
+tf.compat.v1.flags.DEFINE_string('data_dir', '/home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Data/training',
+                                 """ Directory where to find the dataset.""")
 
 tf.compat.v1.flags.DEFINE_string('files_checkpoint',
                                  '/home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Code/run_/checkpoints'
