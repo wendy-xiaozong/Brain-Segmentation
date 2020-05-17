@@ -49,8 +49,6 @@ class Subjects(object):
 
 
 def get_objects(files, path=path):
-    print("path:", path)
-    print("data_dir", FLAGS.data_dir)
     subjects_dict = {"train": [], "val": []}
     # files files = {"train": data_list[:train_subjects], "val": data_list[train_subjects:]}
     for key in files.keys():
@@ -58,7 +56,7 @@ def get_objects(files, path=path):
         print("\n{} {} data {}".format("*" * 20, key, "*" * 20))
         for n in range(n_files):
             subject = files[key][n]
-            subjects_dict[key].append(Subjects(subject, path))
+            subjects_dict[key].append(Subjects(subject, FLAGS.data_dir))
             print("Subject: " + subject)
     print()
     return subjects_dict
