@@ -2,11 +2,6 @@ import tensorflow as tf
 import sys
 import os
 
-import config
-from preprocess import batch_norm_3d
-from data import get_files, get_objects, add_extra_dims
-
-
 FLAGS = tf.compat.v1.flags.FLAGS
 
 

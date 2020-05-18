@@ -2,7 +2,6 @@ import os
 import pickle
 from random import shuffle
 
-import config
 import SimpleITK as sitk
 import tensorflow as tf
 import numpy as np
