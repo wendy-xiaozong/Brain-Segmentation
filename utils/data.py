@@ -35,7 +35,6 @@ class Subjects(object):
         self.ir_array = sitk.GetArrayFromImage(self.ir_img)
         self.label_array = sitk.GetArrayFromImage(self.label_img)
         self.shape = self.flair_array.shape
-        print("get data! path:", path)
 
     def __str__(self):
         return "Subject: {}\nData path: {}\n".format(self.name,
@@ -44,15 +43,10 @@ class Subjects(object):
     def add_dims_3d(self):
         self.label_shape = tuple([1] + list(self.shape) + [11])  # (1, 48, 240, 240, 11)
         self.shape = tuple([1] + list(self.shape) + [1])  # (1, 48, 240, 240, 1)
-        print("before flair_array:", self.flair_array.shape)
-        self.flair_array = np.reshape(self.flair_array, self.shape)
-        print("after flair_array:", self.flair_array.shape)
+        self.flair_array = np.reshape(self.flair_array, self.shape)  # before (48, 240, 240) after (1, 48, 240, 240, 1)
         self.t1_array = np.reshape(self.t1_array, self.shape)
         self.ir_array = np.reshape(self.ir_array, self.shape)
-        print("before label_array:", self.label_array.shape)
         self.label_array = one_hot_encode(self.label_array, self.label_shape)
-        print("after label_array:", self.label_array.shape)
-
 
 
 def get_objects(files, path=path):
@@ -64,7 +58,7 @@ def get_objects(files, path=path):
         for n in range(n_files):
             subject = files[key][n]
             subjects_dict[key].append(Subjects(subject, FLAGS.data_dir))
-            print("Subject: " + subject)
+            print("get data! Subject: " + subject)
     print()
     return subjects_dict
 
@@ -110,15 +104,13 @@ def add_extra_dims(subjects_dict, dims=3):
 
 def one_hot_encode(array, shape):
     array += 1
-    channels = shape[-1]
-    array = np.repeat(array, channels)
-    print("before array", array.shape)
-    array = np.reshape(array, shape)
-    print("after array", array.shape)
+    channels = shape[-1]  # (1, 48, 240, 240, 11)
+    print("before array:", array.head())
+    array = np.repeat(array, channels)  # channels = 11 repeat all the number 11 times to make one hot
+    array = np.reshape(array, shape)  # before (30412800,) after  (1, 48, 240, 240, 11)
     array = array / np.arange(1, channels + 1)
-    
     array[array > 1] = 0
-    array[array < 1] = 0
+    array[array < 1] = 0  # only one number = 1
     return array
 
 
