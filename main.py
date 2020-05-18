@@ -17,12 +17,10 @@ def train(patch_size):
     py = patch_size[1]
     px = patch_size[2]
 
-    tf.compat.v1.disable_eager_execution()
-
-    x_flair = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
-    x_t1 = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
-    x_ir = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
-    y_gt = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
+    x_flair = tf.Variable(shape=[None, pz, py, px, 1])
+    x_t1 = tf.Variable(shape=[None, pz, py, px, 1])
+    x_ir = tf.Variable(shape=[None, pz, py, px, 1])
+    y_gt = tf.Variable(shape=[None, pz, py, px, 11])
     x = tf.concat(values=(x_flair, x_t1, x_ir), axis=4, name="input/concat")
 
     model = tf.keras.Input()
