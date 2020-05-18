@@ -105,7 +105,6 @@ def add_extra_dims(subjects_dict, dims=3):
 def one_hot_encode(array, shape):
     array += 1
     channels = shape[-1]  # (1, 48, 240, 240, 11)
-    print("before array:", array.head())
     array = np.repeat(array, channels)  # channels = 11 repeat all the number 11 times to make one hot
     array = np.reshape(array, shape)  # before (30412800,) after  (1, 48, 240, 240, 11)
     array = array / np.arange(1, channels + 1)
