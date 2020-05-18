@@ -30,7 +30,7 @@ CHECKPOINT_PATH="$work_dir/train/run_$RUN/checkpoints/run_${RUN}"
 module load cuda cudnn
 source /home/jueqi/tensorflow/bin/activate
 mkdir "./run_${RUN}/checkpoints"
-python ./utils/data.py \
+python ./main.py \
     --data_dir="$DATA_DIR" \
     --files_checkpoint="$FILES_CHECKPOINT" \
     --train_subjects=$TRAIN_SUBJECTS \
