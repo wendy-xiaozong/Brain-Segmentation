@@ -23,7 +23,7 @@ def train(patch_size):
     y_gt = tf.Variable(shape=[None, pz, py, px, 11])
     x = tf.concat(values=(x_flair, x_t1, x_ir), axis=4, name="input/concat")
 
-    model = tf.keras.Input()
+    model = tf.keras.Input(shape=())
 
     net = build_model(model, labels=y_gt)
 
