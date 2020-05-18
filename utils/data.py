@@ -93,7 +93,6 @@ def load_files_order(checkpoint):
 
 def add_extra_dims(subjects_dict, dims=3):
     for key in subjects_dict.keys():
-        print("key:", key)
         n_files = len(subjects_dict[key])
         for n in range(n_files):
             subject = subjects_dict[key][n]
