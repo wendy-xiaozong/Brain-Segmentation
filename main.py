@@ -17,6 +17,8 @@ def train(patch_size):
     py = patch_size[1]
     px = patch_size[2]
 
+    tf.compat.v1.disable_eager_execution()
+
     x_flair = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, pz, py, px, 1])
     x_t1 = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, pz, py, px, 1])
     x_ir = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, pz, py, px, 1])

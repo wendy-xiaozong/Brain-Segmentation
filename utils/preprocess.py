@@ -15,4 +15,5 @@ def batch_norm_3d(inputs, name=None):
                                           scale=1,
                                           variance_epsilon=1e-9)
         batch = tf.transpose(batch, perm=[3, 0, 1, 2, 4])
+        print("after batch:", batch.shape.as_list())
     return batch
