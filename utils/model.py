@@ -2,7 +2,7 @@ import tensorflow as tf
 import sys
 import os
 
-from utils import batch_norm_3d
+from .preprocess import batch_norm_3d
 
 FLAGS = tf.compat.v1.flags.FLAGS
 
