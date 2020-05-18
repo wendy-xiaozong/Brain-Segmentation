@@ -24,10 +24,10 @@ def train(patch_size):
     x_ir = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
     y_gt = tf.Variable(tf.Variable(shape=[None, pz, py, px, 1]))
     x = tf.concat(values=(x_flair, x_t1, x_ir), axis=4, name="input/concat")
-    print(x.get_shape())
-    # model = tf.keras.Input()
-    #
-    # net = build_model(inputs=x, labels=y_gt)
+
+    model = tf.keras.Input()
+
+    net = build_model(model, labels=y_gt)
 
     # rate = tf.compat.v1.placeholder(dtype=tf.float32)
     # optimizer = tf.train.AdamOptimizer(learning_rate=rate)
