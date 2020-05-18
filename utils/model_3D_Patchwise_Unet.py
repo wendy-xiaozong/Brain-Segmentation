@@ -8,30 +8,47 @@ from . import batch_norm_3d
 FLAGS = tf.compat.v1.flags.FLAGS
 
 
-def encoder(model,
-            levels,
+def encoder(levels,
             channels,
             number_of_units,
-            pool_strides):
+            pool_strides,
+            name):
     """levels=3,
                       channels=[64, 128, 256],
                       number_of_units=[3, 4, 5],
                       pool_strides=pool_strides"""
+    model = tf.keras.Input(shape=(1, 8, 24, 24, 3))  # ??
     for level in range(levels):
-        net = get_layer(
+        model = get_layer(
             model,
             number_of_units=number_of_units[level],
-            channels=channels[level])
+            channels=channels[level],
+            name="")
         if level < (levels - 1):
-            net = tf.keras.layers.AveragePooling3D(
+            model = tf.keras.layers.AveragePooling3D(
                 pool_size=pool_strides[level],
                 strides=pool_strides[level],
-                padding="same")(net)  # ???
-        return net
+                padding="same")(model)
+        return model
 
 
-def cnn_3d_segmentation(inputs,
-                        levels,
+def transition_layer(net,
+                     input_scope,
+                     scope,
+                     levels,
+                     channels):
+    for level in range(levels - 1):
+        net[scope + "_level_" + str(level)] = get_layer( \
+            net=net[input_scope + "_level_" + str(level)],
+            name="level_" + str(level),
+            number_of_units=1,
+            channels=channels[level])
+    net[scope + "_level_" + str(levels - 1)] = \
+        net[input_scope + "_level_" + str(levels - 1)]
+    return net
+
+
+def cnn_3d_segmentation(levels,
                         channels,
                         encoder_units,
                         decoder_units,
@@ -41,10 +58,8 @@ def cnn_3d_segmentation(inputs,
                               encoder_units=[3, 4, 5],
                               decoder_units=[2, 2],
                               pool_strides=[[2, 2, 2], [1, 2, 2]]"""
-    model = tf.keras.Sequential()
     transition_channels = list((np.array(channels) * 0.25).astype(np.int32))
-    net = encoder(model=model,
-                  levels=levels,
+    net = encoder(levels=levels,
                   channels=channels,
                   number_of_units=encoder_units,
                   pool_strides=pool_strides)
@@ -69,7 +84,8 @@ def cnn_3d_segmentation(inputs,
 
 def get_layer(model,
               number_of_units,
-              channels):
+              channels,
+              name):
     """type_of_layer=cnn,
                 number_of_units=3, // for 3 kind of picture
                 channels=64"""
@@ -99,9 +115,8 @@ def get_layer(model,
     return net
 
 
-def cnn_3d_segmentation_1(inputs):
-    net = cnn_3d_segmentation(inputs=inputs,
-                              levels=3,
+def cnn_3d_segmentation_1():
+    net = cnn_3d_segmentation(levels=3,
                               channels=[64, 128, 256],
                               encoder_units=[3, 4, 5],
                               decoder_units=[2, 2],
@@ -109,7 +124,7 @@ def cnn_3d_segmentation_1(inputs):
     return net
 
 
-def model(inputs):
+def model():
     # if FLAGS.model == "resnet_3d_1":
     #     net = resnet_3d_segmentation_1(inputs=inputs)
     # else:
@@ -117,9 +132,8 @@ def model(inputs):
     return net
 
 
-def build_model(inputs, labels):
-    x = batch_norm_3d(inputs=inputs)
-    net = model(x)
+def build_model(labels):
+    net = model()
     loss = get_loss(labels=labels,
                     predictions=net["output"],
                     loss_type=FLAGS.loss_type,

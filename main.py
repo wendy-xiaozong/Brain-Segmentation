@@ -17,14 +17,8 @@ def train(patch_size):
     py = patch_size[1]
     px = patch_size[2]
 
-    x_flair = tf.Variable(tf.zeros(shape=[None, pz, py, px, 1]))
-    x_t1 = tf.Variable(tf.zeros(shape=[None, pz, py, px, 1]))
-    x_ir = tf.Variable(tf.zeros(shape=[None, pz, py, px, 1]))
-    y_gt = tf.Variable(tf.zeros(shape=[None, pz, py, px, 11]))
-    input = tf.concat(values=(x_flair, x_t1, x_ir), axis=4)
-    print(input.get_shape())
-
-    net = build_model(input, labels=y_gt)
+    net = build_model(labels=y_gt)  # The first argument to the original model function (the input x) is gone.
+    # This is because object layers separate building the model from calling the model.
 
     # rate = tf.compat.v1.placeholder(dtype=tf.float32)
     # optimizer = tf.train.AdamOptimizer(learning_rate=rate)
