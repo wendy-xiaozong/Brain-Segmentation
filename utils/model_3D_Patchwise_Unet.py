@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 
-from .preprocess import batch_norm_3d
+from . import batch_norm_3d
 
 FLAGS = tf.compat.v1.flags.FLAGS
 
