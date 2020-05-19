@@ -4,8 +4,8 @@ from random import randint
 import numpy as np
 from time import time
 
-from utils.data import get_dataset
-from utils.model_3D_Patchwise_Unet import build_model
+from .utils.data import get_dataset
+from .utils.model_3D_Patchwise_Unet import build_model
 
 FLAGS = tf.compat.v1.flags.FLAGS  # to get argument from cmd
 
@@ -17,8 +17,7 @@ def train(patch_size):
     py = patch_size[1]
     px = patch_size[2]
 
-    net = build_model(labels=y_gt)  # The first argument to the original model function (the input x) is gone.
-    # This is because object layers separate building the model from calling the model.
+    net = build_model()
 
     # rate = tf.compat.v1.placeholder(dtype=tf.float32)
     # optimizer = tf.train.AdamOptimizer(learning_rate=rate)
