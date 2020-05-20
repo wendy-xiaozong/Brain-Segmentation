@@ -4,8 +4,8 @@ from random import randint
 import numpy as np
 from time import time
 
-from .utils.data import get_dataset
-from .utils.model_3D_Patchwise_Unet import build_model
+from utils.data import get_dataset
+from utils.model_3D_Patchwise_Unet import build_model
 
 FLAGS = tf.compat.v1.flags.FLAGS  # to get argument from cmd
 
