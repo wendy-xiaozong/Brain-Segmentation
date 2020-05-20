@@ -8,13 +8,13 @@ def get_loss(labels, predictions, loss_type, scope=None, **kwargs):
         * mean_squared_error
         * log_loss
         * huber_loss - requires huber_delta
-    """
-    '''labels=labels,
+
+        labels=labels,
         predictions=net["output"],
         loss_type="log_loss"
         scope="log_loss"
         huber_delta=1
-    '''
+    """
     if loss_type == "absolute_difference":
         loss_func = lambda x, y, z: tf.compat.v1.losses.absolute_difference(labels=x,
                                                                             predictions=y,
@@ -25,7 +25,7 @@ def get_loss(labels, predictions, loss_type, scope=None, **kwargs):
                                                                            predictions=y,
                                                                            weights=z,
                                                                            reduction=tf.losses.Reduction.NONE)
-    elif loss_type == "log_loss":
+    elif loss_type == "log_loss":  # use
         loss_func = lambda x, y, z: tf.compat.v1.losses.log_loss(labels=x,
                                                                  predictions=y,
                                                                  weights=z,

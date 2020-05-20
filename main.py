@@ -17,6 +17,9 @@ def train(patch_size):
     py = patch_size[1]
     px = patch_size[2]
 
+    y_gt = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, pz, py, px, 11])
+    print(y_gt.get_shape())
+
     net = build_model()
 
     # rate = tf.compat.v1.placeholder(dtype=tf.float32)

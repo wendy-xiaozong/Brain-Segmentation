@@ -54,17 +54,18 @@ def cnn_3d_segmentation(channels,
     return model
 
 
-def build_model(labels):
+def build_model():
     model = cnn_3d_segmentation(channels=[64, 128, 256],
                                 pool_strides=[[2, 2, 2], [1, 2, 2]])
+    model.summary()
 
-    loss = get_loss(labels=labels,
-                    predictions=net["output"],
-                    loss_type=FLAGS.loss_type,
-                    scope=FLAGS.loss_type,
-                    huber_delta=FLAGS.huber_delta)
-    dsc = get_dsc(labels=labels,
-                  predictions=net["output"])
-    net["loss"] = loss
-    net["dsc"] = dsc
-    return net
+    # loss = get_loss(labels=labels,
+    #                 predictions=net["output"],
+    #                 loss_type=FLAGS.loss_type,
+    #                 scope=FLAGS.loss_type,
+    #                 huber_delta=FLAGS.huber_delta)
+    # dsc = get_dsc(labels=labels,
+    #               predictions=net["output"])
+    # net["loss"] = loss
+    # net["dsc"] = dsc
+    # return net
