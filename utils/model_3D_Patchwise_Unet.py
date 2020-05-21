@@ -40,16 +40,16 @@ def cnn_3d_segmentation(channels,
                               dilation_rate=1, activation='relu',
                               kernel_regularizer=regularizers.l2(0.5),
                               bias_regularizer=regularizers.l2(0.5), name='decoder_2')(conv3)
-    merge4 = Concatenate([conv2, upconv4], axis=4)
+    merge4 = Concatenate([conv2, upconv4], axis=1)
     upconv5 = Conv3DTranspose(filters=channels[1], kernel_size=pool_strides[0], strides=pool_strides[0], padding="same",
                               dilation_rate=1, activation='relu',
                               kernel_regularizer=regularizers.l2(0.5),
                               bias_regularizer=regularizers.l2(0.5), name='decoder_1')(merge4)
-    merge5 = Concatenate([conv1, upconv5], axis=4)
+    merge5 = Concatenate([conv1, upconv5], axis=1)
     conv6 = Conv3D(merge5, filters=11, kernel_size=1, strides=1, padding="same",
                    kernel_regularizer=regularizers.l2(0.5), bias_regularizer=regularizers.l2(0.5),
                    name='FullyConnectedLayer')
-    conv6 = tf.nn.softmax(logits=conv6, axis=4, name="softmax")(conv6)  # ???
+    conv6 = tf.nn.softmax(logits=conv6, axis=1, name="softmax")(conv6)  # ???
     model = Model(inputs=inputs, output=conv6)
     return model
 
