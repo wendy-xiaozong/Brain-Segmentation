@@ -6,7 +6,7 @@
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
 #SBATCH --mail-type=ALL
 
-
+RUN=1
 work_dir=$(pwd)  # /home/jueqi/projects/def-jlevman/jueqi/MRBrainS18/Code
 MAIN_DIR=${work_dir%/*}
 MAIN_DIR=${MAIN_DIR%/*}

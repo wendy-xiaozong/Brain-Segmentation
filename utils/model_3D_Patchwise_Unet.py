@@ -22,32 +22,32 @@ def cnn_3d_segmentation(channels,
     # encoder
     inputs = Input(shape=(8, 24, 24, 3))  # ??
     conv1 = Conv3D(filters=channels[0], kernel_size=3, strides=1, padding="same", dilation_rate=1, activation='relu',
-                   kernel_regularizer=regularizers.l2(scale=1.0),
-                   bias_regularizer=regularizers.l2(scale=1.0), name='encoder_1')(inputs)
+                   kernel_regularizer=regularizers.l2(0.5),
+                   bias_regularizer=regularizers.l2(0.5), name='encoder_1')(inputs)
     conv1 = BatchNormalization()(conv1)
     conv1 = AveragePooling3D(pool_size=pool_strides[0], pool_strides=pool_strides[0], padding="same")(conv1)
     conv2 = Conv3D(filters=channels[1], kernel_size=3, strides=1, padding="same", dilation_rate=1, activation='relu',
-                   kernel_regularizer=regularizers.l2(scale=1.0),
-                   bias_regularizer=regularizers.l2(scale=1.0), name='encoder_2')(conv1)
+                   kernel_regularizer=regularizers.l2(0.5),
+                   bias_regularizer=regularizers.l2(0.5), name='encoder_2')(conv1)
     conv2 = AveragePooling3D(pool_size=pool_strides[1], pool_strides=pool_strides[1], padding="same")(conv2)
     conv2 = BatchNormalization()(conv2)
     conv3 = Conv3D(filters=channels[2], kernel_size=3, strides=1, padding="same", dilation_rate=1, activation='relu',
-                   kernel_regularizer=regularizers.l2(scale=1.0),
-                   bias_regularizer=regularizers.l2(scale=1.0), name='encoder_3')(conv2)
+                   kernel_regularizer=regularizers.l2(0.5),
+                   bias_regularizer=regularizers.l2(0.5), name='encoder_3')(conv2)
     conv3 = BatchNormalization()(conv3)
     # decoder
     upconv4 = Conv3DTranspose(filters=channels[2], kernel_size=pool_strides[1], strides=pool_strides[1], padding="same",
                               dilation_rate=1, activation='relu',
-                              kernel_regularizer=regularizers.l2(scale=1.0),
-                              bias_regularizer=regularizers.l2(scale=1.0), name='decoder_2')(conv3)
+                              kernel_regularizer=regularizers.l2(0.5),
+                              bias_regularizer=regularizers.l2(0.5), name='decoder_2')(conv3)
     merge4 = Concatenate([conv2, upconv4], axis=4)
     upconv5 = Conv3DTranspose(filters=channels[1], kernel_size=pool_strides[0], strides=pool_strides[0], padding="same",
                               dilation_rate=1, activation='relu',
-                              kernel_regularizer=regularizers.l2(scale=1.0),
-                              bias_regularizer=regularizers.l2(scale=1.0), name='decoder_1')(merge4)
+                              kernel_regularizer=regularizers.l2(0.5),
+                              bias_regularizer=regularizers.l2(0.5), name='decoder_1')(merge4)
     merge5 = Concatenate([conv1, upconv5], axis=4)
     conv6 = Conv3D(merge5, filters=11, kernel_size=1, strides=1, padding="same",
-                   kernel_regularizer=regularizers.l2(scale=1.0), bias_regularizer=regularizers.l2(scale=1.0),
+                   kernel_regularizer=regularizers.l2(0.5), bias_regularizer=regularizers.l2(0.5),
                    name='FullyConnectedLayer')
     conv6 = tf.nn.softmax(logits=conv6, axis=4, name="softmax")(conv6)  # ???
     model = Model(inputs=inputs, output=conv6)
