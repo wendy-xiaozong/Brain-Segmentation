@@ -25,11 +25,11 @@ def cnn_3d_segmentation(channels,
                    kernel_regularizer=regularizers.l2(0.5),
                    bias_regularizer=regularizers.l2(0.5), name='encoder_1')(inputs)
     conv1 = BatchNormalization()(conv1)
-    conv1 = AveragePooling3D(pool_size=pool_strides[0], pool_strides=pool_strides[0], padding="same")(conv1)
+    conv1 = AveragePooling3D(pool_size=pool_strides[0], strides=pool_strides[0], padding="same")(conv1)
     conv2 = Conv3D(filters=channels[1], kernel_size=3, strides=1, padding="same", dilation_rate=1, activation='relu',
                    kernel_regularizer=regularizers.l2(0.5),
                    bias_regularizer=regularizers.l2(0.5), name='encoder_2')(conv1)
-    conv2 = AveragePooling3D(pool_size=pool_strides[1], pool_strides=pool_strides[1], padding="same")(conv2)
+    conv2 = AveragePooling3D(pool_size=pool_strides[1], strides=pool_strides[1], padding="same")(conv2)
     conv2 = BatchNormalization()(conv2)
     conv3 = Conv3D(filters=channels[2], kernel_size=3, strides=1, padding="same", dilation_rate=1, activation='relu',
                    kernel_regularizer=regularizers.l2(0.5),
