@@ -24,7 +24,8 @@ def get_CNN_layer(model, number_of_units, channels, name):  # block
 def cnn_3d_segmentation(channels,
                         pool_strides,
                         encoder_units,
-                        decoder_units):
+                        decoder_units,
+                        transition_channels):
     """levels=3,
                               channels=[64, 128, 256],
                               encoder_units=[3, 4, 5],
@@ -46,31 +47,30 @@ def cnn_3d_segmentation(channels,
                               kernel_regularizer=regularizers.l2(0.5),
                               bias_regularizer=regularizers.l2(0.5), name='decoder_2')(conv3)
     upconv4 = BatchNormalization()(upconv4)
-    upconv4 = get_CNN_layer(model=upconv4, number_of_units=decoder_units[1], channels=channels[1], name=name)
-
-
-    merge4 = Concatenate(axis=4)([conv2, upconv4])  # ?? axis ?
+    transition_layer_4 = get_CNN_layer(model=conv2, number_of_units=decoder_units[1], channels=transition_channels[1],
+                                       name='transition')
+    merge4 = Concatenate(axis=4)([upconv4, transition_layer_4])
+    upconv4 = get_CNN_layer(model=merge4, number_of_units=decoder_units[1], channels=channels[1], name=name)
     upconv5 = Conv3DTranspose(filters=channels[0], kernel_size=pool_strides[0], strides=pool_strides[0], padding="same",
                               dilation_rate=1, activation='relu',
                               kernel_regularizer=regularizers.l2(0.5),
-                              bias_regularizer=regularizers.l2(0.5), name='decoder_1')(merge4)
-    merge5 = Concatenate(axis=4)([conv1, upconv5])
-    conv6 = Conv3D(merge5, filters=11, kernel_size=1, strides=1, padding="same",
-                   kernel_regularizer=regularizers.l2(0.5), bias_regularizer=regularizers.l2(0.5),
-                   name='FullyConnectedLayer')
-    conv6 = tf.nn.softmax(logits=conv6, axis=1, name="softmax")(conv6)  # ???
+                              bias_regularizer=regularizers.l2(0.5), name='decoder_1')(upconv4)
+    upconv5 = BatchNormalization()(upconv5)
+    transition_layer_5 = get_CNN_layer(model=conv1, number_of_units=decoder_units[1], channels=transition_channels[1],
+                                       name='transition')
+    merge5 = Concatenate(axis=4)([upconv5, transition_layer_5])
+    upconv5 = get_CNN_layer(model=merge5, number_of_units=decoder_units[1], channels=channels[1], name=name)
+    conv6 = tf.nn.softmax(logits=upconv5, axis=1, name="softmax")(upconv5)  # ???
     model = Model(inputs=inputs, output=conv6)
     return model
 
 
 def build_model():
-    transition_channels = list((np.array([[64, 128, 256]]) * 0.25).astype(np.int32))
-    print("transition_channels: ", transition_channels)
-
     model = cnn_3d_segmentation(channels=[64, 128, 256],
                                 pool_strides=[[2, 2, 2], [1, 2, 2]],
                                 encoder_units=[3, 4, 5],
-                                decoder_units=[2, 2])
+                                decoder_units=[2, 2],
+                                transition_channels=[16, 32, 64])
     model.summary()
 
     # loss = get_loss(labels=labels,
