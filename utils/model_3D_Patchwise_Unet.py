@@ -34,11 +34,11 @@ def cnn_3d_segmentation(channels,
     # encoder
     name = 'encoder'
     inputs = Input(shape=(8, 24, 24, 3))  # ??
-    conv1 = get_CNN_layer(model=inputs, number_of_units=encoder_units[0], channels=channels[0], name=name)
+    conv1 = get_CNN_layer(model=inputs, number_of_units=encoder_units[0], channels=channels[0], name=name + '_level_1')
     conv2 = AveragePooling3D(pool_size=pool_strides[0], strides=pool_strides[0], padding="same")(conv1)
-    conv2 = get_CNN_layer(model=conv2, number_of_units=encoder_units[1], channels=channels[1], name=name)
+    conv2 = get_CNN_layer(model=conv2, number_of_units=encoder_units[1], channels=channels[1], name=name + '_level_2')
     conv3 = AveragePooling3D(pool_size=pool_strides[1], strides=pool_strides[1], padding="same")(conv2)
-    conv3 = get_CNN_layer(model=conv3, number_of_units=encoder_units[2], channels=channels[2], name=name)
+    conv3 = get_CNN_layer(model=conv3, number_of_units=encoder_units[2], channels=channels[2], name=name + '_level_3')
 
     # decoder
     name = 'decoder'
@@ -48,7 +48,7 @@ def cnn_3d_segmentation(channels,
                               bias_regularizer=regularizers.l2(0.5), name='decoder_2')(conv3)
     upconv4 = BatchNormalization()(upconv4)
     transition_layer_4 = get_CNN_layer(model=conv2, number_of_units=decoder_units[1], channels=transition_channels[1],
-                                       name='transition')
+                                       name='transition' + '_level_4')
     merge4 = Concatenate(axis=4)([upconv4, transition_layer_4])
     upconv4 = get_CNN_layer(model=merge4, number_of_units=decoder_units[1], channels=channels[1], name=name)
     upconv5 = Conv3DTranspose(filters=channels[0], kernel_size=pool_strides[0], strides=pool_strides[0], padding="same",
@@ -57,7 +57,7 @@ def cnn_3d_segmentation(channels,
                               bias_regularizer=regularizers.l2(0.5), name='decoder_1')(upconv4)
     upconv5 = BatchNormalization()(upconv5)
     transition_layer_5 = get_CNN_layer(model=conv1, number_of_units=decoder_units[1], channels=transition_channels[1],
-                                       name='transition')
+                                       name='transition' + '_level_5')
     merge5 = Concatenate(axis=4)([upconv5, transition_layer_5])
     upconv5 = get_CNN_layer(model=merge5, number_of_units=decoder_units[1], channels=channels[1], name=name)
     output = Conv3D(filters=11, kernel_size=1, strides=1, padding='same', kernel_regularizer=regularizers.l2(0.5),
