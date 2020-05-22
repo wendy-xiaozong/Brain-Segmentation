@@ -46,7 +46,7 @@ def cnn_3d_segmentation(channels,
                               kernel_regularizer=regularizers.l2(0.5),
                               bias_regularizer=regularizers.l2(0.5), name='decoder_2')(conv3)
     upconv4 = BatchNormalization()(upconv4)
-    upconv4 = get_CNN_layer(model=upconv4, number_of_units=decoder_units[1], channels=channels[])
+    upconv4 = get_CNN_layer(model=upconv4, number_of_units=decoder_units[1], channels=channels[1], name=name)
 
 
     merge4 = Concatenate(axis=4)([conv2, upconv4])  # ?? axis ?
@@ -68,7 +68,9 @@ def build_model():
     print("transition_channels: ", transition_channels)
 
     model = cnn_3d_segmentation(channels=[64, 128, 256],
-                                pool_strides=[[2, 2, 2], [1, 2, 2]])
+                                pool_strides=[[2, 2, 2], [1, 2, 2]],
+                                encoder_units=[3, 4, 5],
+                                decoder_units=[2, 2])
     model.summary()
 
     # loss = get_loss(labels=labels,
