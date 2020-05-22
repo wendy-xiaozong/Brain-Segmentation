@@ -33,7 +33,7 @@ def cnn_3d_segmentation(channels,
                               pool_strides=[[2, 2, 2], [1, 2, 2]]"""
     # encoder
     name = 'encoder'
-    inputs = Input(shape=(5, 8, 24, 24, 3))  # ??
+    inputs = Input(shape=(8, 24, 24, 3))  # ??
     conv1 = get_CNN_layer(model=inputs, number_of_units=encoder_units[0], channels=channels[0], name=name)
     conv2 = AveragePooling3D(pool_size=pool_strides[0], strides=pool_strides[0], padding="same")(conv1)
     conv2 = get_CNN_layer(model=conv2, number_of_units=encoder_units[1], channels=channels[1], name=name)
