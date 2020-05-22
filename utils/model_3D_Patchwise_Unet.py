@@ -60,8 +60,10 @@ def cnn_3d_segmentation(channels,
                                        name='transition')
     merge5 = Concatenate(axis=4)([upconv5, transition_layer_5])
     upconv5 = get_CNN_layer(model=merge5, number_of_units=decoder_units[1], channels=channels[1], name=name)
-    conv6 = tf.nn.softmax(logits=upconv5, axis=1, name="softmax")  # ???
-    model = Model(inputs=inputs, output=conv6)
+    output = Conv3D(filters=11, kernel_size=1, strides=1, padding='same', kernel_regularizer=regularizers.l2(0.5),
+                    bias_regularizer=regularizers.l2(0.5), name="output")(upconv5)
+    conv6 = tf.nn.softmax(logits=output, axis=1, name="softmax")  # ???
+    model = Model(inputs, conv6)
     return model
 
 
