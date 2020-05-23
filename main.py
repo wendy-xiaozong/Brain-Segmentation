@@ -14,17 +14,14 @@ FLAGS = tf.compat.v1.flags.FLAGS  # to get argument from cmd
 def train(patch_size):
     dataset = get_dataset()
 
-    pz = patch_size[0]  # "8,24,24"
-    py = patch_size[1]
-    px = patch_size[2]
-
     net = build_model()
     net.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=FLAGS.learning_rate),
                 loss=get_loss, metrics=[dice_coefficient])
     net.summary()
 
-    # new_rate = FLAGS.learning_rate
-    # saver = tf.train.Saver(keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint)
+    new_rate = FLAGS.learning_rate
+    saver = tf.train.Saver(keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint)
+
     #
     # try:
     #     checkpoints = FLAGS.test_checkpoints.split(",")

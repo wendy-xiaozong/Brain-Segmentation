@@ -9,6 +9,7 @@ def get_loss(y_true, y_pred):
        huber_delta=1
     """
     shape = tf.shape(y_true)
+    print(shape)
     axes = tf.range(tf.shape(shape)[0] - 1)
     loss_1 = tf.compat.v1.losses.log_loss(labels=y_true, predictions=y_pred)  # weights = 1
     nonzero = tf.reduce_sum(y_true, axis=axes, keepdims=True) + 1e-9  # sum
