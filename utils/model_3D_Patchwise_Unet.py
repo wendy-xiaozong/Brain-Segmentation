@@ -75,13 +75,14 @@ def build_model():
                                 transition_channels=[16, 32, 64])
     model.summary()
 
-    # loss = get_loss(labels=labels,
-    #                 predictions=net["output"],
-    #                 loss_type=FLAGS.loss_type,
-    #                 scope=FLAGS.loss_type,
-    #                 huber_delta=FLAGS.huber_delta)
-    # dsc = get_dsc(labels=labels,
-    #               predictions=net["output"])
-    # net["loss"] = loss
-    # net["dsc"] = dsc
-    # return net
+    model.compile('adam', )
+    loss = get_loss(labels=labels,
+                    predictions=net["output"],
+                    loss_type=FLAGS.loss_type,
+                    scope=FLAGS.loss_type,
+                    huber_delta=FLAGS.huber_delta)
+    dsc = get_dsc(labels=labels,
+                  predictions=net["output"])
+    net["loss"] = loss
+    net["dsc"] = dsc
+    return model

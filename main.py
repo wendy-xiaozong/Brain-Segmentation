@@ -6,6 +6,7 @@ from time import time
 
 from utils.data import get_dataset
 from utils.model_3D_Patchwise_Unet import build_model
+from utils.losses import get_loss, dice_coefficient
 
 FLAGS = tf.compat.v1.flags.FLAGS  # to get argument from cmd
 
@@ -18,17 +19,10 @@ def train(patch_size):
     px = patch_size[2]
 
     net = build_model()
+    net.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=FLAGS.learning_rate),
+                loss=get_loss, metrics=dice_coefficient)
+    net.summary()
 
-    # rate = tf.compat.v1.placeholder(dtype=tf.float32)
-    # optimizer = tf.train.AdamOptimizer(learning_rate=rate)
-    # train = optimizer.minimize(net["loss"])
-    #
-    #
-    # sess = tf.Session()
-    # init = tf.global_variables_initializer()
-    #
-    # sess.run(init)
-    #
     # new_rate = FLAGS.learning_rate
     # saver = tf.train.Saver(keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint)
     #
