@@ -23,8 +23,8 @@ def train(patch_size):
                 loss=get_loss, metrics=[dice_coefficient])
     net.summary()
 
-    new_rate = FLAGS.learning_rate
-    saver = tf.train.Saver(keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint)
+    # new_rate = FLAGS.learning_rate
+    # saver = tf.train.Saver(keep_checkpoint_every_n_hours=FLAGS.keep_checkpoint)
     #
     # try:
     #     checkpoints = FLAGS.test_checkpoints.split(",")
