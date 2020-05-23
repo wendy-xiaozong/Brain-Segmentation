@@ -27,7 +27,7 @@ def dice_coefficient(y_true, y_pred, smooth=.1):
     Dice = (2*|X & Y|)/ (|X|+ |Y|)
          =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
     """
-    y_true = tf.keras.layers.Flatten(y_true)
-    y_pred = tf.keras.layers.Flatten(y_pred)
+    y_true = tf.keras.layers.Flatten()(y_true)
+    y_pred = tf.keras.layers.Flatten()(y_pred)
     intersection = tf.reduce_sum(tf.abs(y_true * y_pred))
     return (2. * intersection) / (tf.reduce_sum(tf.square(y_true)) + tf.reduce_sum(tf.square(y_pred)) + smooth)
