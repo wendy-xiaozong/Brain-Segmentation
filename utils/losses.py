@@ -10,11 +10,11 @@ def get_loss(y_true, y_pred):
     """
     shape = tf.shape(y_true)
     axes = tf.range(tf.shape(shape)[0] - 1)
-    loss_1 = tf.compat.v1.losses.log_loss(labels=y_true, logits=y_pred)  # weights = 1
+    loss_1 = tf.compat.v1.losses.log_loss(labels=y_true, predictions=y_pred)  # weights = 1
     nonzero = tf.reduce_sum(y_true, axis=axes) + 1e-9  # sum
     loss_1 = tf.reduce_sum(loss_1, axis=axes) / nonzero
     loss_1 = tf.reduce_mean(loss_1)
-    loss_2 = tf.compat.v1.losses.log_loss(labels=y_true, logits=y_pred, weights=1 - y_true)
+    loss_2 = tf.compat.v1.losses.log_loss(labels=y_true, predictions=y_pred, weights=1 - y_true)
     nonzero = tf.reduce_sum(1 - y_true, axis=axes) + 1e-9
     loss_2 = tf.reduce_sum(loss_2, axis=axes) / nonzero
     loss_2 = tf.reduce_mean(loss_2)
