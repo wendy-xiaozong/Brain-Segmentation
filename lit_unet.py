@@ -24,17 +24,32 @@ class Lightning_Unet(pl.LightningModule):
     def __init__(self, hparams):
         super(Lightning_Unet, self).__init__()
         self.hparams = hparams
+        self.out_classes = 138
         self.unet = UNet(
             in_channels=1,
-            out_classes=1,
+            out_classes=self.out_classes,
             num_encoding_blocks=3,
-            out_channels_first_layer=8,
+            out_channels_first_layer=32,
             normalization="Group",
             upsampling_type='conv',
             padding=2,
             dropout=0,
         )
         self.lr = 1e-3
+
+        # torchio parameters
+        # ?need to try to find the suitable value
+        self.max_queue_length = 100
+        self.patch_size = 24
+        self.samples_per_volume = 10
+
+        self.subjects = get_subjects()
+        random.seed(42)
+        random.shuffle(self.subjects)  # shuffle it to pick the val set
+        num_subjects = len(self.subjects)
+        num_training_subjects = int(num_subjects * 0.9)  # （5074+359+21） * 0.9 used for training
+        self.training_subjects = self.subjects[:num_training_subjects]
+        self.validation_subjects = self.subjects[num_training_subjects:]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet(x)
@@ -53,22 +68,52 @@ class Lightning_Unet(pl.LightningModule):
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
         train_imageDataset = torchio.ImagesDataset(self.training_subjects, transform=training_transform)
-        training_loader = DataLoader(train_imageDataset,
-                                     batch_size=self.hparams.batch_size,
-                                     # num_workers=multiprocessing.cpu_count()) would cause RuntimeError('DataLoader
-                                     # worker (pid(s) {}) exited unexpectedly' if don't do that
-                                     num_workers=10)
+
+        patches_training_set = torchio.Queue(
+            subjects_dataset=train_imageDataset,
+            # Maximum number of patches that can be stored in the queue.
+            # Using a large number means that the queue needs to be filled less often,
+            # but more CPU memory is needed to store the patches.
+            max_length=self.max_queue_length,
+            # Number of patches to extract from each volume.
+            # A small number of patches ensures a large variability in the queue,   ??? how to understand this??
+            # but training will be slower.
+            samples_per_volume=self.samples_per_volume,
+            #  A sampler used to extract patches from the volumes.
+            sampler=torchio.sampler.UniformSampler(self.patch_size),
+            num_workers=8,
+            # If True, the subjects dataset is shuffled at the beginning of each epoch,
+            # i.e. when all patches from all subjects have been processed
+            shuffle_subjects=False,
+            # If True, patches are shuffled after filling the queue.
+            shuffle_patches=True,
+            verbose=True,
+        )
+
+        training_loader = DataLoader(patches_training_set,
+                                     batch_size=self.hparams.batch_size)
+
         print('Training set:', len(train_imageDataset), 'subjects')
         return training_loader
 
     def val_dataloader(self) -> DataLoader:
         val_transform = get_val_transform()
         val_imageDataset = torchio.ImagesDataset(self.validation_subjects, transform=val_transform)
-        val_loader = DataLoader(val_imageDataset,
-                                batch_size=self.hparams.batch_size * 2,
-                                # num_workers=multiprocessing.cpu_count())
-                                num_workers=10)
-        print('Validation set:', len(val_imageDataset), 'subjects')
+
+        patches_validation_set = torchio.Queue(
+            subjects_dataset=val_imageDataset,
+            max_length=self.max_queue_length,
+            samples_per_volume=self.samples_per_volume,
+            sampler=torchio.sampler.UniformSampler(self.patch_size),
+            num_workers=8,
+            shuffle_subjects=False,
+            shuffle_patches=True,
+            verbose=True,
+        )
+
+        val_loader = DataLoader(patches_validation_set,
+                                batch_size=self.hparams.batch_size * 2)
+        print('Validation set:', len(val_loader), 'subjects')
         return val_loader
 
     def test_dataloader(self):
@@ -77,7 +122,7 @@ class Lightning_Unet(pl.LightningModule):
         test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
         test_loader = DataLoader(test_imageDataset,
                                  batch_size=1,  # always one because using different label size
-                                 num_workers=10)
+                                 num_workers=8)
         print('Testing set:', len(test_imageDataset), 'subjects')
         return test_loader
 
@@ -87,10 +132,6 @@ class Lightning_Unet(pl.LightningModule):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
         return optimizer
-
-    # from https://github.com/MIC-DKFZ/nnUNet/blob/master/nnunet/training/learning_rate/poly_lr.py#L16
-    def poly_lr(epoch, max_epochs, initial_lr, exponent=0.9):
-        return initial_lr * (1 - epoch / max_epochs) ** exponent
 
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
@@ -102,20 +143,20 @@ class Lightning_Unet(pl.LightningModule):
             targets[targets != targets] = 0
         # making the label as binary, it is very strange because if the label is not binary
         # the whole model cannot learn at all
-        target_bin = torch.zeros(size=targets.size()).type_as(inputs)
-        target_bin[targets > 0.5] = 1
-        return inputs, target_bin
+        # target_one_hot = F.one_hot(targets)
+        return inputs, targets
 
     def training_step(self, batch, batch_idx):
         inputs, targets = self.prepare_batch(batch)
         # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
         logits = self(inputs)
-        probs = torch.sigmoid(logits)
+        probs = F.softmax(logits, dim=self.out_classes)
         dice, iou, _, _ = get_score(probs, targets)
         if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
             input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
             target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
             prob = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
+            # really have problem in there, need to fix it
             dice_score, _, _, _ = get_score(torch.unsqueeze(prob, 0), torch.unsqueeze(target, 0))
             log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
