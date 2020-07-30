@@ -8,6 +8,8 @@
 - [ ] remember to find the suitable patch size
 - [ ] make a parameter of whether to compute the background
 - [ ] to test the dice loss
+- [ ] add more Fully Connected Layer(???)
+- [ ] add mp4 part in the validation step end later
 
 
 ## Try

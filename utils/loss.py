@@ -1,97 +1,86 @@
-# Some code is borrowed from https://github.com/Project-MONAI/MONAI/blob/master/monai/losses/dice.py
-
+# Some code is from: https://github.com/Project-MONAI/MONAI/blob/master/monai/losses/dice.py
 import torch
-from pytorch_lightning.metrics.functional import stat_scores
-import scipy.spatial
+from torch import tensor
 from typing import Union
 from .enums import LossReduction
+from monai.networks import one_hot
+import warnings
 
-CHANNELS_DIMENSION = 1
-SPATIAL_DIMENSIONS = 2, 3, 4
 
-
-def get_score(pred,
-              target,
+def dice_loss(input: tensor,
+              target: tensor,
               include_background: bool = True,
+              softmax: bool = False,
+              to_onehot: bool = True,
+              squared_pred: bool = False,
               reduction: Union[LossReduction, str] = LossReduction.MEAN,
-              epsilon=1e-9) -> torch.tensor:
+              smooth: float = 1e-5):
     """
+    loss function, from
+    Milletari, F. et. al. (2016) V-Net: Fully Convolutional Neural Networks forVolumetric Medical Image Segmentation, 3DV, 2016.
+
     Args:
-        pred: predict tensor
-        target: target tensor
-        include_background: whether to compute the background class
+        input: predict tensor，the shape should be BNH[WD].
+        target: target tensor, the shape should be BNH[WD].
+        include_background:
+        softmax: if True, apply a softmax function to the prediction.
+        to_onehot: whether to convert `target` into the one-hot format. Defaults to False.
+        squared_pred: use squared versions of targets and predictions in the denominator or not.
         reduction: {``"none"``, ``"mean"``, ``"sum"``}
                 Specifies the reduction to apply to the output. Defaults to ``"mean"``.
                 - ``"none"``: no reduction will be applied.
                 - ``"mean"``: the sum of the output will be divided by the number of elements in the output.
                 - ``"sum"``: the output will be summed.
-        epsilon: epsilon
+        smooth: a small constant to avoid nan.
     """
-    num_classes = pred.shape[1]
+
+    n_pred_ch = input.shape[1]
+    if softmax:
+       input = torch.softmax(input, 1)
+
+    if to_onehot:
+        if n_pred_ch == 1:
+            warnings.warn("single channel prediction, `to_onehot_y=True` ignored.")
+        else:
+            # the F.one_hot can not use here, because it would return BNH[WD]C (C is the class
+            target = one_hot(target.to(torch.int64), num_classes=n_pred_ch)
 
     if not include_background:
-        pred = pred[:, 1:]
-        target = target[:, 1:]
+        if n_pred_ch == 1:
+            warnings.warn("single channel prediction, `include_background=False` ignored.")
+        else:
+            # if skipping background, removing first channel
+            target = target[:, 1:]
+            input = input[:, 1:]
 
     assert (
-            target.shape == pred.shape
-    ), f"ground truth has differing shape ({target.shape}) from input ({pred.shape})"
+            target.shape == input.shape
+    ), f"ground truth has differing shape ({target.shape}) from input ({input.shape})"
 
-    nan_score = 0.0
-    # do not compute dice for the background
-    dice_score = torch.zeros(num_classes, device=pred.device, dtype=torch.float32)
-    iou_score = torch.zeros(num_classes, device=pred.device, dtype=torch.float32)
-    sensitivity_score = torch.zeros(num_classes, device=pred.device, dtype=torch.float32)
-    specificity_score = torch.zeros(num_classes, device=pred.device, dtype=torch.float32)
-    for i in range(0, num_classes):
-        if not (target == i).any():
-            # no foreground class
-            dice_score[i] += nan_score
-            iou_score[i] += nan_score
-            sensitivity_score[i] += nan_score
-            specificity_score[i] += nan_score
-            continue
+    # reducing only spatial dimensions (not batch nor channels)
+    reduce_axis = list(range(2, len(input.shape)))
+    intersection = torch.sum(target * input, dim=reduce_axis)
 
-        tp, fp, tn, fn, sup = stat_scores(pred=pred, target=target, class_index=i)
-        denom = (2 * tp + fp + fn).to(torch.float)
+    if squared_pred:
+        target = torch.pow(target, 2)
+        input = torch.pow(input, 2)
 
-        dice_score_cls = (2 * tp + epsilon).to(torch.float) / denom if torch.is_nonzero(denom) else nan_score
-        dice_score[i] += dice_score_cls
-        iou_score_cls = (tp + epsilon).to(torch.float) / (tp + fp + fn).to(torch.float) if torch.is_nonzero(denom) \
-            else nan_score
-        iou_score[i] += iou_score_cls
-        sensitivity_score_cls = (tp + epsilon).to(torch.float) / (tp + fn).to(torch.float) if torch.is_nonzero(denom) \
-            else nan_score
-        sensitivity_score[i] += sensitivity_score_cls
-        specificity_score_cls = (tn + epsilon).to(torch.float) / (tn + fp).to(torch.float) if torch.is_nonzero(denom) \
-            else nan_score
-        specificity_score[i] += specificity_score_cls
+    ground_o = torch.sum(target, dim=reduce_axis)
+    pred_o = torch.sum(input, dim=reduce_axis)
 
+    denominator = ground_o + pred_o
+
+    f = 1.0 - (2.0 * intersection + smooth) / (denominator + smooth)
+
+    reduction = LossReduction(reduction).value
     if reduction == LossReduction.MEAN.value:
-        dice_score = torch.mean(dice_score)  # the batch and channel average
-        iou_score = torch.mean(iou_score)
-        sensitivity_score = torch.mean(sensitivity_score)
-        specificity_score = torch.mean(specificity_score)
-    # elif reduction == LossReduction.SUM.value:
-    #     f = torch.sum(f)  # sum over the batch and channel dims
+        f = torch.mean(f)  # the batch and channel average
+    elif reduction == LossReduction.SUM.value:
+        f = torch.sum(f)  # sum over the batch and channel dims
     elif reduction == LossReduction.NONE.value:
         pass  # returns [N, n_classes] losses
     else:
         raise ValueError(f'Unsupported reduction: {reduction}, available options are ["mean", "sum", "none"].')
 
-    return dice_score, iou_score, sensitivity_score, specificity_score
+    return f
 
-
-def dice_loss(prob, target):
-    """
-    code is from https://github.com/CBICA/Deep-BET/blob/master/Deep_BET/utils/losses.py#L11
-    :param input:
-    :param target:
-    :return:
-    """
-    smooth = 1e-7
-    iflat = prob.view(-1)
-    tflat = target.view(-1)
-    intersection = (iflat * tflat).sum()
-    return 1 - ((2. * intersection + smooth) /
-                (iflat.sum() + tflat.sum() + smooth))

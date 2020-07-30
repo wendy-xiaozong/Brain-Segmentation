@@ -9,8 +9,8 @@ from data.transform import get_train_transforms, get_val_transform, get_test_tra
 from argparse import ArgumentParser
 from data.const import SIZE
 from model.unet.unet import UNet
-from utils.loss import get_score, dice_loss
-from utils.optimizer import fetch_optimizer
+from utils.matrix import get_score
+from utils.loss import dice_loss
 from torch.optim.lr_scheduler import MultiStepLR
 import torch.nn.functional as F
 from postprocess.visualize import log_all_info
@@ -24,7 +24,7 @@ class Lightning_Unet(pl.LightningModule):
     def __init__(self, hparams):
         super(Lightning_Unet, self).__init__()
         self.hparams = hparams
-        self.out_classes = 138
+        self.out_classes = 139
         self.unet = UNet(
             in_channels=1,
             out_classes=self.out_classes,
@@ -38,9 +38,9 @@ class Lightning_Unet(pl.LightningModule):
         self.lr = 1e-3
 
         # torchio parameters
-        # ?need to try to find the suitable value
+        # need to try to find the suitable value
         self.max_queue_length = 100
-        self.patch_size = 24
+        self.patch_size = 96  # from the HighResnet
         self.samples_per_volume = 10
 
         self.subjects = get_subjects()
@@ -81,7 +81,7 @@ class Lightning_Unet(pl.LightningModule):
             samples_per_volume=self.samples_per_volume,
             #  A sampler used to extract patches from the volumes.
             sampler=torchio.sampler.UniformSampler(self.patch_size),
-            num_workers=8,
+            num_workers=10,
             # If True, the subjects dataset is shuffled at the beginning of each epoch,
             # i.e. when all patches from all subjects have been processed
             shuffle_subjects=False,
@@ -105,7 +105,7 @@ class Lightning_Unet(pl.LightningModule):
             max_length=self.max_queue_length,
             samples_per_volume=self.samples_per_volume,
             sampler=torchio.sampler.UniformSampler(self.patch_size),
-            num_workers=8,
+            num_workers=10,
             shuffle_subjects=False,
             shuffle_patches=True,
             verbose=True,
@@ -121,8 +121,8 @@ class Lightning_Unet(pl.LightningModule):
         # using all the data to test
         test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
         test_loader = DataLoader(test_imageDataset,
-                                 batch_size=1,  # always one because using different label size
-                                 num_workers=8)
+                                 batch_size=1)  # always one because using different label size
+                                 # num_workers=8)
         print('Testing set:', len(test_imageDataset), 'subjects')
         return test_loader
 
@@ -149,29 +149,26 @@ class Lightning_Unet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         inputs, targets = self.prepare_batch(batch)
         # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
-        logits = self(inputs)
-        probs = F.softmax(logits, dim=self.out_classes)
+        probs = self(inputs)
+        print(f"probs: {probs.shape}")
         dice, iou, _, _ = get_score(probs, targets)
-        if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
-            input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
-            target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
-            prob = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
-            # really have problem in there, need to fix it
-            dice_score, _, _, _ = get_score(torch.unsqueeze(prob, 0), torch.unsqueeze(target, 0))
-            log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
+        loss = dice_loss(input=probs, target=targets, to_onehot=True)
+        # if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
+        #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
+        #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
+        #     prob = probs.chunk(probs.size()[0], 0)[0]  # split into 1 in the dimension 0
+        #     # really have problem in there, need to fix it
+        #     # dice_score, _, _, _ = get_score(torch.unsqueeze(prob, 0), torch.unsqueeze(target, 0))
+        #     log_all_info(self, input, target, prob, batch_idx, "training")
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
-        loss = dice_loss(probs, targets)
         tensorboard_logs = {"train_loss": loss, "train_IoU": iou, "train_dice": dice}
         return {'loss': loss, "log": tensorboard_logs}
 
     def validation_step(self, batch, batch_id):
         inputs, targets = self.prepare_batch(batch)
-        # print(f"input shape: {inputs.shape}, targets shape: {targets.shape}")
-        # print(f"validation input range: {torch.min(inputs)} - {torch.max(inputs)}")
-        logits = self(inputs)
-        probs = torch.sigmoid(logits)  # compare the position
-        # loss = F.binary_cross_entropy_with_logits(logits, targets)
-        loss = dice_loss(probs, targets)
+        probs = self(inputs)
+        # print(f"probs: {probs.shape}")
+        loss = dice_loss(input=probs, target=targets, to_onehot=True)
         dice, iou, sensitivity, specificity = get_score(probs, targets)
         return {'val_step_loss': loss,
                 'val_step_dice': dice,
@@ -205,7 +202,8 @@ class Lightning_Unet(pl.LightningModule):
             input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
             target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
             logit = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
-            log_all_info(self, input, target, logit, batch_idx, "testing")
+            # need to add the dice score here
+            # log_all_info(self, input, target, logit, batch_idx, "testing")
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
         loss = dice_loss(probs, targets)
         dice, iou, sensitivity, specificity = get_score(probs, targets)
@@ -238,7 +236,7 @@ class Lightning_Unet(pl.LightningModule):
         parameters defined here will be available to the model through self.hparams
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--batch_size", type=int, default=2, help='Batch size', dest='batch_size')
+        parser.add_argument("--batch_size", type=int, default=1, help='Batch size', dest='batch_size')
         parser.add_argument("--learning_rate", type=float, default=1e-3, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')
         parser.add_argument("--down_sample", type=str, default="max", help="the way to down sample")
