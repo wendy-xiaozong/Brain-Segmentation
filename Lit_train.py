@@ -52,13 +52,15 @@ def main(hparams):
         mode='min'
     )
 
+    # model = LitUnet(args).load_from_checkpoint('./log/checkpoint')
+
     tb_logger = loggers.TensorBoardLogger(hparams.TensorBoardLogger)
 
     trainer = Trainer(
         gpus=hparams.gpus,
-        num_nodes=hparams.nodes,
-        distributed_backend='ddp',
-        check_val_every_n_epoch=1,
+        # num_nodes=hparams.nodes,
+        # distributed_backend='ddp',
+        check_val_every_n_epoch=(1.0/20),
         # log every k batches instead
         row_log_interval=10,
         # set the interval at which you want to log using this trainer flag.

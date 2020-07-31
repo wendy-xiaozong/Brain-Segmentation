@@ -3,13 +3,14 @@
 - [X] using patch-based pipelines
 - [X] read about multi-classification
 - [X] test if the metrics works
+- [ ] find out where is the 4D images part (???
 - [ ] tune the patch based parameters to make the train faster
 - [ ] use cropped image to train
 - [ ] remember to find the suitable patch size
 - [ ] make a parameter of whether to compute the background
 - [ ] to test the dice loss
 - [ ] add more Fully Connected Layer(???)
-- [ ] add mp4 part in the validation step end later
+- [ ] make the val_check_per_epoch as a fiction
 
 
 ## Try

@@ -36,6 +36,9 @@ else:
     DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
     CROPPED_IMG = DATA_ROOT / "cropped/img"
     CROPPED_LABEL = DATA_ROOT / "cropped/label"
+    processed_folder = DATA_ROOT / "processed_ADNI"
+    processed_img_folder = processed_folder / "img"
+    processed_label_folder = processed_folder / "label"
 
 CC359_DATASET_DIR = DATA_ROOT / "CalgaryCampinas359/Original"
 CC359_LABEL_DIR = DATA_ROOT / "CalgaryCampinas359/Skull-stripping-masks/STAPLE"
