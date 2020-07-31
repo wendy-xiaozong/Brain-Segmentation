@@ -90,12 +90,12 @@ def get_processed_subjects():
     for img_path in img_path_list:
         img_name = img_path.name
         if img_name in images_baseline_set:
-            visual_img_path_list.append(img_name)
+            visual_img_path_list.append(img_path)
 
     for label_path in img_path_list:
         label_name = label_path.name
         if label_name in images_baseline_set:
-            visual_label_path_list.append(label_name)
+            visual_label_path_list.append(label_path)
 
     print(f"{ctime()}: getting number of subjects {len(subjects)}")
     print(f"{ctime()}: getting number of path for visualizationg {len(visual_img_path_list)}")

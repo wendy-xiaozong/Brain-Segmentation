@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 from torchio import DATA
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
-from data.get_subjects import get_subjects
+from data.get_subjects import get_subjects, get_processed_subjects
 from data.const import CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1, COMPUTECANADA
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
@@ -47,7 +47,7 @@ class Lightning_Unet(pl.LightningModule):
         # in the queue, but training will be slower.
         self.samples_per_volume = 10
 
-        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects()
+        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects()
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
@@ -186,48 +186,38 @@ class Lightning_Unet(pl.LightningModule):
         cur_img_path = self.visual_img_path_list[self.current_epoch % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.current_epoch % len(self.visual_label_path_list)]
 
-        # in my version of torchio ( 0.16.25 ), it have problem to let the transform directly process the tio.Subject
-        # but if I update to the latest version, it have other problem, so take this way. Let it deal with the tensor
-        img_np = nib.load(cur_img_path).get_data().astype(np.uint8)
-        target_np = np.squeeze(nib.load(cur_label_path).get_data().astype(np.uint8))
-        input_tensor = torch.from_numpy(img_np).unsqueeze(dim=0)
-        target_tensor = torch.from_numpy(target_np)
-        # torchio is so slow! because it use CPU to compute tensor???!!! Cannot change to CUDA
-        # print(f"input_tensor max: {input_tensor.max()}")  # 255
-        # print(f"input_tensor min: {input_tensor.min()}")  # 0
-        val_trans = get_val_transform()
-        preprocessed = val_trans(input_tensor)
-        preprocessed = preprocessed.squeeze()
-        preprocessed_subject = torchio.Subject(
-            img=torchio.Image(tensor=preprocessed, type=torchio.INTENSITY)
+        # read label numpy
+        label_np = nib.load(cur_label_path).get_data().astype(np.uint8)
+
+        cur_subject = torchio.Subject(
+            img=torchio.Image(cur_img_path, type=torchio.INTENSITY)
         )
+        transform = get_val_transform()
+        preprocessed = transform(cur_subject)
 
         patch_overlap = 10  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
-            preprocessed_subject,
+            preprocessed,
             self.patch_size,
             patch_overlap,
         )
 
         patch_loader = torch.utils.data.DataLoader(grid_sampler)
-        aggregator_pred = torchio.inference.GridAggregator(grid_sampler)
+        aggregator = torchio.inference.GridAggregator(grid_sampler)
 
         # don't forget change to GPU to compute!
         for patches_batch in patch_loader:
-            print(f"patches_batch type: {type(patches_batch)}")
-            print(f"patches_batch shape: {patches_batch.shape}")
-            # locations = patches_batch[torchio.LOCATION]
-            # print(f"inputs type: {type(inputs)}")
-            # print(f"inputs shape: {inputs.shape}")
-            # preds = self(inputs)
-            # labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)
-            # aggregator_pred.add_batch(labels, locations)
-            # aggregator_target.add_batch(targets, locations)
-        output_tensor = aggregator_pred.get_output_tensor()
-        target_tensor = aggregator_pred.get_output_tensor()
+            # whether need to move to CUDA ?
+            input_tensor = patches_batch['img'][torchio.DATA]
+            input_tensor = input_tensor.type_as(outputs[0]['val_step_loss'])
+            locations = patches_batch[torchio.LOCATION]
+            preds = self(input_tensor)
+            labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)
+            aggregator.add_batch(labels, locations)
+        output_tensor = aggregator.get_output_tensor()
 
         print(f"output_tensor shape: {output_tensor.shape}")
-        print(f"target_tensor shape: {target_tensor.shape}")
+        print(f"label_numpy shape: {label_np.shape}")
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
