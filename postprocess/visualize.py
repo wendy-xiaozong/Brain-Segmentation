@@ -128,9 +128,6 @@ class BrainSlices:
         self.target_img: ndarray = target_.numpy().squeeze().astype(np.uint8)
         self.predict_img: ndarray = prediction.cpu().detach().numpy().squeeze().astype(np.uint8)
 
-        print(f"target image max: {np.max(self.target_img)}")
-        print(f"target image min: {np.min(self.target_img)}")
-
         si, sj, sk = self.input_img.shape[:3]
         i = si // 2
         j = sj // 2
@@ -177,20 +174,17 @@ class BrainSlices:
     def plot(self) -> Figure:
         nrows, ncols = 3, 3  # one row for each slice position
 
-        # Display data as an image; i.e. on a 2D regular raster.
-        labels = 'AS', 'RS', 'RA'
-        titles = 'Sagittal', 'Coronal', 'Axial'
-
-        fig = plt.figure(figsize=(10, 18))
+        fig = plt.figure(figsize=(15, 25))
         # need to change here
-        gs = gridspec.GridSpec(nrows, ncols, width_ratios=[256 / 160, 1, 1])
+        # 160 is a random number
+        gs = gridspec.GridSpec(nrows, ncols, width_ratios=[self.shape[1] / 160, 1, 1])
 
         for i in range(0, 3):
             ax1 = plt.subplot(gs[i*3])
             ax2 = plt.subplot(gs[i*3 + 1])
             ax3 = plt.subplot(gs[i*3 + 2])
             axes = ax1, ax2, ax3
-            self.plot_row(self.slices[i], axes, labels, titles, self.title[i], i)
+            self.plot_row(self.slices[i], axes, self.title[i], i)
 
         plt.tight_layout()
         return fig
@@ -199,12 +193,10 @@ class BrainSlices:
             self,
             slices: List,
             axes: Tuple[Any, Any, Any],
-            labels: Tuple[str, str, str],
-            titles: Tuple[str, str, str],
             title: str,
             row_num: int,
     ) -> None:
-        for (slice_, axis, label, stitle) in zip(slices, axes, labels, titles):
+        for (slice_, axis) in zip(slices, axes):
             if row_num == 0:
                 axis.imshow(turn(slice_), cmap="bone", alpha=0.8)
             else:
@@ -212,20 +204,15 @@ class BrainSlices:
             axis.grid(False)
             axis.invert_xaxis()
             axis.invert_yaxis()
-            x, y = label
-            axis.set_xlabel(x)
-            axis.set_ylabel(y)
-            axis.set_title(stitle)
-            axis.set_aspect('equal')
-        if title is not None:
-            plt.gcf().suptitle(title)
+            axis.set_xticks([])
+            axis.set_yticks([])
+            if title is not None:
+                plt.gcf().suptitle(title)
 
-    def log(self, batch_idx: int, title: str) -> None:
+    def log(self, fig: Figure, dice_score: float) -> None:
         logger = self.lightning.logger
-        fig = self.plot()
-        summary = f"{title}: Epoch {self.lightning.current_epoch + 1}, Batch {batch_idx}"
+        summary = f"Epoch {self.lightning.current_epoch + 1} dice_score {dice_score}"
         logger.experiment.add_figure(summary, fig, close=True)
-
         # if you want to manually intervene, look at the code at
         # https://github.com/pytorch/pytorch/blob/master/torch/utils/tensorboard/_utils.py
         # permalink to version:
@@ -356,14 +343,12 @@ https://pytorch.org/docs/stable/tensorboard.html
 """
 
 
-def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor) -> None:
+def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float) -> None:
     """Helper for decluttering training loop. Just performs all logging functions."""
     brainSlice = BrainSlices(module, img, target, preb, colors_path=colors_path)
     fig = brainSlice.plot()
 
-    fig.savefig("./img.jpg")
-
-    # brainSlice.log(batch_idx, title)
+    brainSlice.log(fig, dice_score)
 
     # mp4_path = Path(__file__).resolve().parent.parent / "mp4"
     # if not os.path.exists(mp4_path):

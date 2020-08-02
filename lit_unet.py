@@ -41,12 +41,18 @@ class Lightning_Unet(pl.LightningModule):
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 10
-        self.patch_size = 48
+        self.max_queue_length = 1000
+        self.patch_size = 96
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 10
 
+    def forward(self, x: Tensor) -> Tensor:
+        return self.unet(x)
+
+    # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
+    # adjust something about them. This hook is called on every process when using DDP.
+    def setup(self, stage):
         self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects()
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
@@ -54,20 +60,6 @@ class Lightning_Unet(pl.LightningModule):
         num_training_subjects = int(num_subjects * 0.95)  # （5074+359+21） * 0.9 used for training
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
-
-    def forward(self, x: Tensor) -> Tensor:
-        return self.unet(x)
-
-    # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
-    # adjust something about them. This hook is called on every process when using DDP.
-    # def setup(self, stage):
-    #     self.subjects = get_subjects()
-    #     random.seed(42)
-    #     random.shuffle(self.subjects)  # shuffle it to pick the val set
-    #     num_subjects = len(self.subjects)
-    #     num_training_subjects = int(num_subjects * 0.9)  # （5074+359+21） * 0.9 used for training
-    #     self.training_subjects = self.subjects[:num_training_subjects]
-    #     self.validation_subjects = self.subjects[num_training_subjects:]
 
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
@@ -185,8 +177,6 @@ class Lightning_Unet(pl.LightningModule):
         cur_img_path = self.visual_img_path_list[self.current_epoch % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.current_epoch % len(self.visual_label_path_list)]
 
-        print(cur_label_path)
-
         cur_img_subject = torchio.Subject(
             img=torchio.Image(cur_img_path, type=torchio.INTENSITY)
         )
@@ -217,10 +207,14 @@ class Lightning_Unet(pl.LightningModule):
             aggregator.add_batch(labels, locations)
         output_tensor = aggregator.get_output_tensor()
 
+        preprocessed_label_gpu = preprocessed_label.img.data.type_as(outputs[0]['val_step_loss'])
+        dice, _, _, _ = get_score(pred=output_tensor, target=preprocessed_label_gpu)
+
         log_all_info(self,
                      preprocessed_img.img.data,
                      preprocessed_label.img.data,
-                     output_tensor)
+                     output_tensor,
+                     dice)
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
