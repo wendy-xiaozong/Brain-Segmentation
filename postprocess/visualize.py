@@ -1,5 +1,6 @@
-"""A copy from
+"""Some code is from:
 https://github.com/DM-Berger/unet-learn/blob/6dc108a9a6f49c6d6a50cd29d30eac4f7275582e/src/lightning/log.py
+https://github.com/fepegar/miccai-educational-challenge-2019/blob/master/visualization.py
 """
 
 import matplotlib.pyplot as plt
@@ -20,9 +21,14 @@ from matplotlib.pyplot import Axes, Figure
 from pathlib import Path
 from pytorch_lightning.loggers import TensorBoardLogger
 from torch import Tensor
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 from pytorch_lightning.core.lightning import LightningModule
+import pandas as pd
+import matplotlib.gridspec as gridspec
 
+import sys
+sys.path.append('../data/')
+from data.const import colors_path
 
 """
 For TensorBoard logging usage, see:
@@ -60,133 +66,164 @@ def get_logger(logdir: Path) -> TensorBoardLogger:
     return TensorBoardLogger(str(logdir), name="unet")
 
 
+class ColorTable:
+    def __init__(self, colors_path: Union[str, Path]):
+        self.df = self.read_color_table(colors_path)
+
+    @staticmethod
+    def read_color_table(colors_path: Union[str, Path]):
+        df = pd.read_csv(
+            colors_path,
+            sep=' ',
+            header=None,
+            names=[
+                'Label',
+                'Name',
+                'R',
+                'G',
+                'B',
+                'A',
+            ],
+            index_col='Label'
+        )
+        return df
+
+    def get_color(self, label: int) -> Tuple[int, int, int]:
+        """
+        There must be nicer ways of doing this
+        """
+        try:
+            rgb = (
+                self.df.loc[label].R,
+                self.df.loc[label].G,
+                self.df.loc[label].B,
+            )
+        except KeyError:
+            rgb = 0, 0, 0
+        return rgb
+
+    def colorize(self, label_map: np.ndarray) -> np.ndarray:
+        rgb = np.stack(3 * [label_map], axis=-1)
+        for label in np.unique(label_map):
+            mask = label_map == label
+            rgb[mask] = self.get_color(label)
+        return rgb
+
+
+def turn(array_2d: np.ndarray) -> np.ndarray:
+    return np.flipud(np.rot90(array_2d))
+
+
 # https://www.tensorflow.org/tensorboard/image_summaries#logging_arbitrary_image_data
 class BrainSlices:
-    def __init__(self, lightning: LightningModule, img: Tensor, target_: Tensor, prediction: Tensor, threshold: float):
+    def __init__(self, lightning: LightningModule,
+                 img: Tensor,
+                 target_: Tensor,
+                 prediction: Tensor,
+                 colors_path: Optional[Union[str, Path]] = None):
         # lol mypy type inference really breaks down here...
         self.lightning = lightning
-        img_: ndarray = img.cpu().detach().numpy().squeeze()
-        targ_: ndarray = target_.cpu().detach().numpy().squeeze()
-        pred: ndarray = prediction.cpu().detach().numpy().squeeze()
-        mids: ndarray = np.array(img_.shape) // 2
-        quarts: ndarray = mids // 2  # slices at first quarter of the way through
-        quarts3_4: ndarray = mids + quarts  # slices 3/4 of the way through
-        self.mids = mids
-        self.quarts = quarts
-        self.quarts3_4 = quarts3_4
-        self.slice_positions = ["1/4", "1/2", "3/4"]
-        self.masknames = ["Actual Brain Tissue (probability)",
-                          "Predicted Brain Tissue (probability)",
-                          "Predicted Brain Tissue (binary)"]
-        self.shape = np.array(img_.shape)
-        self.threshold = threshold
+        self.input_img: ndarray = img.cpu().detach().numpy().squeeze()
+        # the float value need to cast to np.unit8, for ColorTable and plot
+        self.target_img: ndarray = target_.numpy().squeeze().astype(np.uint8)
+        self.predict_img: ndarray = prediction.cpu().detach().numpy().squeeze().astype(np.uint8)
+
+        print(f"target image max: {np.max(self.target_img)}")
+        print(f"target image min: {np.min(self.target_img)}")
+
+        si, sj, sk = self.input_img.shape[:3]
+        i = si // 2
+        j = sj // 2
+        k = sk // 2
+        self.slices = [
+            self.get_slice(self.input_img, i, j, k),
+            self.get_slice(self.target_img, i, j, k),
+            self.get_slice(self.predict_img, i, j, k)
+        ]
+
+        if colors_path is not None:
+            color_table = ColorTable(colors_path)
+            self.slices[1] = [color_table.colorize(s) for s in self.slices[1]]
+            self.slices[2] = [color_table.colorize(s) for s in self.slices[2]]
+
+        self.title = ["Actual Brain Tissue",
+                      "Actual Brain Parcellation",
+                      "Predicted Brain Parcellation"]
+        self.shape = np.array(self.input_img.shape)
 
         # Those use for mp4
-        self.img = img_
-        # print(f"img shape: {self.img.shape}")
-        self.masks = [np.ones([*self.img.shape], dtype=int), targ_, pred > self.threshold]
-        self.mask_video_names = [
-            "original images",
-            "Actual Brain Tissue (probability)",
-            "Predicted Brain Tissue (binary)"
-        ]
-        self.scale_imgs = make_imgs(self.img)
+        self.masks = [np.ones([*self.input_img.shape], dtype=int), self.target_img, self.predict_img]
+        self.mask_video_names = ["Actual Brain Tissue",
+                                 "Actual Brain Parcellation",
+                                 "Predicted Brain Parcellation"]
+        self.scale_imgs = make_imgs(self.input_img)
         self.scale_imgs = np.where(self.masks, self.scale_imgs, 0)
         # print(f"masks shape: {self.masks.shape}")
         # print(f"scale_imgs shape: {self.scale_imgs.shape}")
 
-        self.imgs = OrderedDict(
-            [
-                ("1/4", (img_[quarts[0], :, :], img_[:, quarts[1], :], img_[:, :, quarts[2]])),
-                ("1/2", (img_[mids[0], :, :], img_[:, mids[1], :], img_[:, :, mids[2]])),
-                ("3/4", (img_[quarts3_4[0], :, :], img_[:, quarts3_4[1], :], img_[:, :, quarts3_4[2]])),
-            ]
-        )
-        self.targets = OrderedDict(
-            [
-                ("1/4", (targ_[quarts[0], :, :], targ_[:, quarts[1], :], targ_[:, :, quarts[2]])),
-                ("1/2", (targ_[mids[0], :, :], targ_[:, mids[1], :], targ_[:, :, mids[2]])),
-                ("3/4", (targ_[quarts3_4[0], :, :], targ_[:, quarts3_4[1], :], targ_[:, :, quarts3_4[2]])),
-            ]
-        )
-        self.preds = OrderedDict(
-            [
-                ("1/4", (pred[quarts[0], :, :], pred[:, quarts[1], :], pred[:, :, quarts[2]])),
-                ("1/2", (pred[mids[0], :, :], pred[:, mids[1], :], pred[:, :, mids[2]])),
-                ("3/4", (pred[quarts3_4[0], :, :], pred[:, quarts3_4[1], :], pred[:, :, quarts3_4[2]])),
-            ]
-        )
+    def get_slice(
+            self,
+            input: np.ndarray,
+            i: int,
+            j: int,
+            k: int
+    ):
+        return [
+            input[i, ...],
+            input[:, j, ...],
+            input[:, :, k, ...],
+        ]
 
-    def plot(self) -> Tuple[Figure, Axes]:
-        nrows, ncols = 3, 1  # one row for each slice position
-        all_trues, all_targets, all_preds = [], [], []
-        for i in range(3):  # We want this first so middle images are middle
-            for j, position in enumerate(self.slice_positions):
-                img, target = self.imgs[position][i], self.targets[position][i]
-                prediction = self.preds[position][i]
-                all_trues.append(img)
-                all_targets.append(target)
-                all_preds.append(prediction)
-        fig: Figure
-        axes: Axes
-        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=False)
-        true = np.concatenate(all_trues, axis=1)
-        target = np.concatenate(all_targets, axis=1)
-        pred = np.concatenate(all_preds, axis=1)
-        # convert to logits, since we are using BCEWithLogitsLoss. That is,
-        # BDEWithLogitsLoss handles the sigmoid + loss internally to avoid
-        # imprecision issues, but then this means the output of our network
-        # never *actually* passes through a sigmoid. So we do that here.
-        # pred = t.sigmoid(t.tensor(pred)).numpy()
-
-        # Consistently apply colormap since images are standardized but still
-        # vary considerably in maximum and minimum values
-        imin = np.min(true)
-        imax = np.max(true)
-        scaled = np.array(((true - imin) / (imax - imin)) * 255, dtype=int)
-        # The alpha blending value, between 0 (transparent) and 1 (opaque). This parameter is ignored for RGBA input data.
-        true_args = dict(vmin=0, vmax=255, cmap="gray", alpha=0.5)
-        mask_args = dict(vmin=0.0, vmax=1.0, cmap="gray", alpha=0.5)
+    def plot(self) -> Figure:
+        nrows, ncols = 3, 3  # one row for each slice position
 
         # Display data as an image; i.e. on a 2D regular raster.
-        axes[0].imshow(scaled, **true_args)
-        axes[0].imshow(target, **mask_args)
-        axes[0].set_title(self.masknames[0])
-        axes[0].set_xticks([])
-        axes[0].set_yticks([])
+        labels = 'AS', 'RS', 'RA'
+        titles = 'Sagittal', 'Coronal', 'Axial'
 
-        axes[1].imshow(scaled, **true_args)
-        axes[1].imshow(pred, **mask_args)
-        axes[1].set_title(self.masknames[1])
-        axes[1].set_xticks([])
-        axes[1].set_yticks([])
+        fig = plt.figure(figsize=(10, 18))
+        # need to change here
+        gs = gridspec.GridSpec(nrows, ncols, width_ratios=[256 / 160, 1, 1])
 
-        axes[2].imshow(scaled * np.array(pred > self.threshold, dtype=float), **true_args)
-        axes[2].set_title(self.masknames[2])
-        axes[2].set_xticks([])
-        axes[2].set_yticks([])
+        for i in range(0, 3):
+            ax1 = plt.subplot(gs[i*3])
+            ax2 = plt.subplot(gs[i*3 + 1])
+            ax3 = plt.subplot(gs[i*3 + 2])
+            axes = ax1, ax2, ax3
+            self.plot_row(self.slices[i], axes, labels, titles, self.title[i], i)
 
-        fig.tight_layout(h_pad=0)
-        fig.subplots_adjust(hspace=0.0, wspace=0.0)
-        return fig, axes
+        plt.tight_layout()
+        return fig
 
-    def visualize(self, batch_idx: int, outdir: Path = None) -> None:
-        fig, axes = self.plot()
-        if self.lightning.show_plots:
-            if outdir is None:  # for local debugging
-                plt.show()
-                plt.close()
-                return
-            fig.set_size_inches(w=10, h=6)
-            os.makedirs(outdir, exist_ok=True)
-            plt.savefig(outdir / f"epoch{self.lightning.current_epoch}_batch{batch_idx}.png", dpi=200)
-            plt.close()
-            return
+    def plot_row(
+            self,
+            slices: List,
+            axes: Tuple[Any, Any, Any],
+            labels: Tuple[str, str, str],
+            titles: Tuple[str, str, str],
+            title: str,
+            row_num: int,
+    ) -> None:
+        for (slice_, axis, label, stitle) in zip(slices, axes, labels, titles):
+            if row_num == 0:
+                axis.imshow(turn(slice_), cmap="bone", alpha=0.8)
+            else:
+                axis.imshow(turn(slice_))
+            axis.grid(False)
+            axis.invert_xaxis()
+            axis.invert_yaxis()
+            x, y = label
+            axis.set_xlabel(x)
+            axis.set_ylabel(y)
+            axis.set_title(stitle)
+            axis.set_aspect('equal')
+        if title is not None:
+            plt.gcf().suptitle(title)
 
-    def log(self, batch_idx: int, title: str, dice_score: float) -> None:
+    def log(self, batch_idx: int, title: str) -> None:
         logger = self.lightning.logger
-        fig, axes = self.plot()
-        summary = f"{title}: Epoch {self.lightning.current_epoch + 1}, Batch {batch_idx}, dice: {dice_score}"
+        fig = self.plot()
+        summary = f"{title}: Epoch {self.lightning.current_epoch + 1}, Batch {batch_idx}"
         logger.experiment.add_figure(summary, fig, close=True)
 
         # if you want to manually intervene, look at the code at
@@ -319,11 +356,14 @@ https://pytorch.org/docs/stable/tensorboard.html
 """
 
 
-def log_all_info(module: LightningModule, img: Tensor, target: Tensor, logist: Tensor, batch_idx: int,
-                 title: str) -> None:
+def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor) -> None:
     """Helper for decluttering training loop. Just performs all logging functions."""
-    # brainSlice = BrainSlices(module, img, target, logist, 0.5)
-    # brainSlice.log(batch_idx, title, dice_score)
+    brainSlice = BrainSlices(module, img, target, preb, colors_path=colors_path)
+    fig = brainSlice.plot()
+
+    fig.savefig("./img.jpg")
+
+    # brainSlice.log(batch_idx, title)
 
     # mp4_path = Path(__file__).resolve().parent.parent / "mp4"
     # if not os.path.exists(mp4_path):
@@ -332,4 +372,4 @@ def log_all_info(module: LightningModule, img: Tensor, target: Tensor, logist: T
     # brainSlice.animate_masks(fig_title=f"epoch: {module.current_epoch}, batch: {batch_idx}, dice_score: {dice_score}",
     #                          outfile=mp4_path / Path(
     #                              f"epoch={module.current_epoch}_batch={batch_idx}_dice_score={dice_score}.mp4"))
-    log_weights(module)
+    # log_weights(module)

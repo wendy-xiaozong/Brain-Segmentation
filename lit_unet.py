@@ -126,7 +126,6 @@ class Lightning_Unet(pl.LightningModule):
         test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
         test_loader = DataLoader(test_imageDataset,
                                  batch_size=1)  # always one because using different label size
-                                 # num_workers=8)
         print('Testing set:', len(test_imageDataset), 'subjects')
         return test_loader
 
@@ -186,18 +185,22 @@ class Lightning_Unet(pl.LightningModule):
         cur_img_path = self.visual_img_path_list[self.current_epoch % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.current_epoch % len(self.visual_label_path_list)]
 
-        # read label numpy
-        label_np = nib.load(cur_label_path).get_data().astype(np.uint8)
+        print(cur_label_path)
 
-        cur_subject = torchio.Subject(
+        cur_img_subject = torchio.Subject(
             img=torchio.Image(cur_img_path, type=torchio.INTENSITY)
         )
+        cur_label_subject = torchio.Subject(
+            img=torchio.Image(cur_label_path, type=torchio.LABEL)
+        )
+
         transform = get_val_transform()
-        preprocessed = transform(cur_subject)
+        preprocessed_img = transform(cur_img_subject)
+        preprocessed_label = transform(cur_label_subject)
 
         patch_overlap = 10  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
-            preprocessed,
+            preprocessed_img,
             self.patch_size,
             patch_overlap,
         )
@@ -205,9 +208,7 @@ class Lightning_Unet(pl.LightningModule):
         patch_loader = torch.utils.data.DataLoader(grid_sampler)
         aggregator = torchio.inference.GridAggregator(grid_sampler)
 
-        # don't forget change to GPU to compute!
         for patches_batch in patch_loader:
-            # whether need to move to CUDA ?
             input_tensor = patches_batch['img'][torchio.DATA]
             input_tensor = input_tensor.type_as(outputs[0]['val_step_loss'])
             locations = patches_batch[torchio.LOCATION]
@@ -216,8 +217,10 @@ class Lightning_Unet(pl.LightningModule):
             aggregator.add_batch(labels, locations)
         output_tensor = aggregator.get_output_tensor()
 
-        print(f"output_tensor shape: {output_tensor.shape}")
-        print(f"label_numpy shape: {label_np.shape}")
+        log_all_info(self,
+                     preprocessed_img.img.data,
+                     preprocessed_label.img.data,
+                     output_tensor)
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
