@@ -5,8 +5,13 @@
 - [X] test if the metrics works
 - [X] do this with another subject list (Or do I really need this? a separate list of path might be more helpful actually)
 - [X] why the log part do not work
-- [ ] why the model can not learn??? some part must be wrong. (Resample + cropped)
-- [ ] rewrite the store log part
+- [X] rewrite the store log part
+- [X] why the model can not learn??? some part must be wrong. (Resample + cropped): it does a litte bit better, but it still happen again
+- [X] try again not include the background
+- [ ] why the dice score is always zero???
+- [ ] might need more place to overlap with each other(could be a place to dip into) (how to remove borders) (look for the border pharams) (how the torchio deal with the overlapping part?)
+- [ ] fix the bug about torchio (???)
+- [ ] add the one more layer
 - [ ] read about the learning rate
 - [ ] why the matrix is different from the loss??
 - [ ] why the print network show so less information now?
@@ -46,6 +51,10 @@ the label data (in ADNI, label data have an extra dimension like this (1, 192, )
     0. Using the whole brain volume to do the visualization part
     1. randomly choose 150 images (but every time the image is fixed) from the 1069 baseline images in the ADNI dataset
     2. using this images to do visualization everytime (with the same order every time)
+
+# Some Performance
+- if not using resample, using the orginal dice loss ( reduce by mean ), the loss would drop at a special moment to around 0.4, and all predict the background class. 
+- but after resample, the model can learn. 
 
 
 ![](./img/brain_parcellation.png)
