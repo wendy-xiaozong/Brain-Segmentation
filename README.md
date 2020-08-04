@@ -4,10 +4,11 @@
 - [X] read about multi-classification
 - [X] test if the metrics works
 - [X] do this with another subject list (Or do I really need this? a separate list of path might be more helpful actually)
+- [X] why the log part do not work
 - [ ] why the model can not learn??? some part must be wrong. (Resample + cropped)
-- [ ] write a function to check whether I need use the resample
+- [ ] rewrite the store log part
+- [ ] read about the learning rate
 - [ ] why the matrix is different from the loss??
-- [ ] why the log part do not work
 - [ ] why the print network show so less information now?
 - [ ] crop and resample the data
 - [ ] tune the patch based parameters to make the train faster
@@ -18,6 +19,7 @@
 - [ ] add more Fully Connected Layer(???)
 - [ ] rewrite the test part
 - [ ] add one more layer without using concat
+- [ ] force to upload once to github to clear some redundant file
 
 
 
