@@ -58,7 +58,7 @@ def main(hparams):
         gpus=hparams.gpus,
         num_nodes=hparams.nodes,
         distributed_backend='ddp',
-        check_val_every_n_epoch=(1.0 / 20),
+        check_val_every_n_epoch=0.1,
         # log every k batches instead
         row_log_interval=10,
         # set the interval at which you want to log using this trainer flag.

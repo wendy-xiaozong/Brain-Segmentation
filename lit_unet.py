@@ -207,8 +207,7 @@ class Lightning_Unet(pl.LightningModule):
             aggregator.add_batch(labels, locations)
         output_tensor = aggregator.get_output_tensor()
 
-        preprocessed_label_gpu = preprocessed_label.img.data.type_as(outputs[0]['val_step_loss'])
-        dice, _, _, _ = get_score(pred=output_tensor, target=preprocessed_label_gpu)
+        dice, _, _, _ = get_score(pred=output_tensor, target=preprocessed_label.img.data)
 
         log_all_info(self,
                      preprocessed_img.img.data,

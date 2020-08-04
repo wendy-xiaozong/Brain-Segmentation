@@ -6,7 +6,7 @@ from .const import *
 import torchio as tio
 from time import ctime
 from .get_path import get_path, get_1069_path
-from .const import CROPPED_IMG, CROPPED_LABEL, processed_label_folder, processed_img_folder
+from .const import processed_label_folder, processed_img_folder
 from glob import glob
 import pandas as pd
 
@@ -92,7 +92,7 @@ def get_processed_subjects():
         if img_name in images_baseline_set:
             visual_img_path_list.append(img_path)
 
-    for label_path in img_path_list:
+    for label_path in label_path_list:
         label_name = label_path.name
         if label_name in images_baseline_set:
             visual_label_path_list.append(label_path)

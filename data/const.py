@@ -30,15 +30,18 @@ if TMP or ACT:  # running inside Compute Canada
 if COMPUTECANADA:
     DATA_ROOT = Path(str(TMP)).resolve() / "work"
     # DATA_ROOT = Path("/project/6005889/U-Net_MRI-Data")
-    CROPPED_IMG = DATA_ROOT / "img"
-    CROPPED_LABEL = DATA_ROOT / "label"
+    processed_img_folder = DATA_ROOT / "img"
+    processed_label_folder = DATA_ROOT / "label"
+    cropped_img_folder = DATA_ROOT / "cropped_img"
+    cropped_label_folder = DATA_ROOT / "cropped_label"
 else:
     DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
-    CROPPED_IMG = DATA_ROOT / "cropped/img"
-    CROPPED_LABEL = DATA_ROOT / "cropped/label"
     processed_folder = DATA_ROOT / "processed_ADNI"
     processed_img_folder = processed_folder / "img"
     processed_label_folder = processed_folder / "label"
+    cropped_folder = DATA_ROOT / "cropped_resample"
+    cropped_img_folder = cropped_folder / "img"
+    cropped_label_folder = cropped_folder / "label"
 
 CC359_DATASET_DIR = DATA_ROOT / "CalgaryCampinas359/Original"
 CC359_LABEL_DIR = DATA_ROOT / "CalgaryCampinas359/Skull-stripping-masks/STAPLE"
@@ -47,6 +50,8 @@ NFBS_DATASET_DIR = DATA_ROOT / "NFBS/NFBS_Dataset"
 
 ADNI_DATASET_DIR_1 = DATA_ROOT / "ADNI"
 ADNI_DATASET_DIR_2 = DATA_ROOT / "ADNI/ADNI"
+
+colors_path = Path(__file__).resolve().parent.parent.parent / "GIFNiftyNet.ctbl"
 
 if COMPUTECANADA:
     ADNI_LABEL = ADNI_DATASET_DIR_1 / "cross-sectional_seg138"
