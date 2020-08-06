@@ -17,7 +17,7 @@ import numpy as np
 import torch.nn.functional as F
 from postprocess.visualize import log_all_info
 from torch import Tensor
-from monai.losses import GeneralizedDiceLoss
+from monai.losses import GeneralizedDiceLoss, DiceLoss
 import torchio
 import torch
 import random
@@ -27,29 +27,49 @@ class Lightning_Unet(pl.LightningModule):
     def __init__(self, hparams):
         super(Lightning_Unet, self).__init__()
         self.hparams = hparams
+
         self.out_classes = 139
+        self.deepth = 4
+        self.kernal_size = 5  # whether this affect the model to learn?
+        self.module_type = 'Unet'
+        self.downsampling_type = 'max'
+        self.normalization = 'InstanceNorm3d'
+
         self.unet = UNet(
             in_channels=1,
             out_classes=self.out_classes,
-            num_encoding_blocks=3,
+            num_encoding_blocks=self.deepth,
             out_channels_first_layer=32,
-            normalization="Group",
-            upsampling_type='conv',
-            padding=2,
+            kernal_size=self.kernal_size,
+            normalization=self.normalization,
+            module_type=self.module_type,
+            downsampling_type=self.downsampling_type,
             dropout=0,
         )
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 500
+        self.max_queue_length = 10
         self.patch_size = 96
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 10
         self.val_times = 0
-        self.num_workers = 16
-        if not self.hparams.cedar:
-            self.num_workers = 20
+        self.num_workers = 0
+        # if not self.hparams.cedar:
+        #     self.num_workers = 20
+
+        if not COMPUTECANADA:
+            self.num_workers = 8
+            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
+                whether_use_cropped_and_resample_img=True
+            )
+            random.seed(42)
+            random.shuffle(self.subjects)  # shuffle it to pick the val set
+            num_subjects = len(self.subjects)
+            num_training_subjects = int(num_subjects * 0.95)  # （5074+359+21） * 0.9 used for training
+            self.training_subjects = self.subjects[:num_training_subjects]
+            self.validation_subjects = self.subjects[num_training_subjects:]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet(x)
@@ -148,8 +168,10 @@ class Lightning_Unet(pl.LightningModule):
         inputs, targets = self.prepare_batch(batch)
         probs = self(inputs)
         dice, iou, _, _ = get_score(probs, targets, include_background=True)
-        gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
-        loss = gdloss.forward(input=probs, target=targets)
+        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        # loss = gdloss.forward(input=probs, target=targets)
+        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        loss = diceloss.forward(input=probs, target=targets)
         # if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
         #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
         #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
@@ -164,8 +186,10 @@ class Lightning_Unet(pl.LightningModule):
     def validation_step(self, batch, batch_id):
         inputs, targets = self.prepare_batch(batch)
         probs = self(inputs)
-        gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
-        loss = gdloss.forward(input=probs, target=targets)
+        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        # loss = gdloss.forward(input=probs, target=targets)
+        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        loss = diceloss.forward(input=probs, target=targets)
         dice, iou, sensitivity, specificity = get_score(probs, targets)
         return {'val_step_loss': loss,
                 'val_step_dice': dice,
@@ -216,7 +240,8 @@ class Lightning_Unet(pl.LightningModule):
                      preprocessed_img.img.data,
                      preprocessed_label.img.data,
                      output_tensor,
-                     dice)
+                     dice,
+                     self.val_times)
 
         self.val_times += 1
 

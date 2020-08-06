@@ -8,14 +8,23 @@
 - [X] rewrite the store log part
 - [X] why the model can not learn??? some part must be wrong. (Resample + cropped): it does a litte bit better, but it still happen again
 - [X] try again not include the background
-- [ ] why the dice score is always zero???
+- [X] why the dice score is always zero???
+- [X] fix the bug about torchio (???)
+- [X] adding the CPU number part
+- [X] add the id in the log image part
+- [X] add the one more layer
+- [X] set the `num_workers` = 0
+- [ ] check what I did in the padding part
+- [ ] Try dropout
+- [ ] the filter in each layer might need to change
+- [ ] add the run time params
+- [ ] Rebuild the HighResNet and load the data! to train again
+- [ ] try transfer learning to speed up training
+- [ ] why the training loss label all equal to 1
 - [ ] might need more place to overlap with each other(could be a place to dip into) (how to remove borders) (look for the border pharams) (how the torchio deal with the overlapping part?)
-- [ ] fix the bug about torchio (???)
-- [ ] add the one more layer
 - [ ] read about the learning rate
 - [ ] why the matrix is different from the loss??
 - [ ] why the print network show so less information now?
-- [ ] crop and resample the data
 - [ ] tune the patch based parameters to make the train faster
 - [ ] use cropped image to train
 - [ ] remember to find the suitable patch size
@@ -26,6 +35,10 @@
 - [ ] add one more layer without using concat
 - [ ] force to upload once to github to clear some redundant file
 
+# Reading to do 
+- [ ] Reading the paper: Bringing Background into the Foreground:
+Making All Classes Equal in Weakly-supervised Video Semantic Segmentation (Whether to include the background??)
+- [ ] Finding more paper to read!
 
 
 ## Try

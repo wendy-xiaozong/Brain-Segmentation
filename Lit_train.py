@@ -19,7 +19,7 @@ def main(hparams):
     if COMPUTECANADA:
         cur_path = Path(__file__).resolve().parent.parent
         default_root_dir = cur_path / "log"
-        checkpoint_file = Path(__file__).resolve().parent / "checkpoint/{epoch}-{val_dice:.2f}"
+        checkpoint_file = Path(__file__).resolve().parent / "checkpoint/{epoch}-{val_dice:.5f}"
         if not os.path.exists(Path(__file__).resolve().parent / "checkpoint"):
             os.mkdir(Path(__file__).resolve().parent / "checkpoint")
     else:
@@ -58,7 +58,9 @@ def main(hparams):
         gpus=hparams.gpus,
         num_nodes=hparams.nodes,
         distributed_backend='ddp',
-        check_val_every_n_epoch=0.1,
+        # the next two can be combined to use
+        val_check_interval=0.15,
+        check_val_every_n_epoch=3,
         # log every k batches instead
         row_log_interval=10,
         # set the interval at which you want to log using this trainer flag.
@@ -106,6 +108,8 @@ if __name__ == "__main__":
     parser.add_argument("--TensorBoardLogger", dest='TensorBoardLogger', default='/home/jq/Desktop/log',
                         help='TensorBoardLogger dir')
     parser.add_argument("--name", dest='name', default="using cropped data")
+    parser.add_argument("--cedar", action="store_true",
+                        help="Whether you are using cedar, it related to the cpu number this code used")
     parser = Lightning_Unet.add_model_specific_args(parser)
     hparams = parser.parse_args()
 
