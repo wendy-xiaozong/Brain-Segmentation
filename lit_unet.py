@@ -17,6 +17,7 @@ import numpy as np
 import torch.nn.functional as F
 from postprocess.visualize import log_all_info
 from torch import Tensor
+from monai.losses import GeneralizedDiceLoss
 import torchio
 import torch
 import random
@@ -37,15 +38,18 @@ class Lightning_Unet(pl.LightningModule):
             padding=2,
             dropout=0,
         )
-        self.lr = 1e-3
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 1000
+        self.max_queue_length = 500
         self.patch_size = 96
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 10
+        self.val_times = 0
+        self.num_workers = 16
+        if not self.hparams.cedar:
+            self.num_workers = 20
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet(x)
@@ -53,7 +57,9 @@ class Lightning_Unet(pl.LightningModule):
     # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
-        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects()
+        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
+            whether_use_cropped_and_resample_img=True
+        )
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
@@ -77,7 +83,7 @@ class Lightning_Unet(pl.LightningModule):
             samples_per_volume=self.samples_per_volume,
             #  A sampler used to extract patches from the volumes.
             sampler=torchio.sampler.UniformSampler(self.patch_size),
-            num_workers=8,
+            num_workers=self.num_workers,
             # If True, the subjects dataset is shuffled at the beginning of each epoch,
             # i.e. when all patches from all subjects have been processed
             shuffle_subjects=False,
@@ -101,7 +107,7 @@ class Lightning_Unet(pl.LightningModule):
             max_length=self.max_queue_length,
             samples_per_volume=self.samples_per_volume,
             sampler=torchio.sampler.UniformSampler(self.patch_size),
-            num_workers=8,
+            num_workers=self.num_workers,
             shuffle_subjects=False,
             shuffle_patches=True,
             verbose=True,
@@ -136,18 +142,14 @@ class Lightning_Unet(pl.LightningModule):
         if torch.isnan(targets).any():
             print("there is nan in targets data!")
             targets[targets != targets] = 0
-        # making the label as binary, it is very strange because if the label is not binary
-        # the whole model cannot learn at all
-        # target_one_hot = F.one_hot(targets)
         return inputs, targets
 
     def training_step(self, batch, batch_idx):
         inputs, targets = self.prepare_batch(batch)
-        # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
         probs = self(inputs)
-        # print(f"probs: {probs.shape}")
-        dice, iou, _, _ = get_score(probs, targets)
-        loss = dice_loss(input=probs, target=targets, to_onehot=True)
+        dice, iou, _, _ = get_score(probs, targets, include_background=True)
+        gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        loss = gdloss.forward(input=probs, target=targets)
         # if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
         #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
         #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
@@ -162,7 +164,8 @@ class Lightning_Unet(pl.LightningModule):
     def validation_step(self, batch, batch_id):
         inputs, targets = self.prepare_batch(batch)
         probs = self(inputs)
-        loss = dice_loss(input=probs, target=targets, to_onehot=True)
+        gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        loss = gdloss.forward(input=probs, target=targets)
         dice, iou, sensitivity, specificity = get_score(probs, targets)
         return {'val_step_loss': loss,
                 'val_step_dice': dice,
@@ -174,8 +177,8 @@ class Lightning_Unet(pl.LightningModule):
     # Called at the end of the validation epoch with the outputs of all validation steps.
     def validation_epoch_end(self, outputs):
         # visualization part
-        cur_img_path = self.visual_img_path_list[self.current_epoch % len(self.visual_img_path_list)]
-        cur_label_path = self.visual_label_path_list[self.current_epoch % len(self.visual_label_path_list)]
+        cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
+        cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
 
         cur_img_subject = torchio.Subject(
             img=torchio.Image(cur_img_path, type=torchio.INTENSITY)
@@ -214,6 +217,8 @@ class Lightning_Unet(pl.LightningModule):
                      preprocessed_label.img.data,
                      output_tensor,
                      dice)
+
+        self.val_times += 1
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
@@ -273,7 +278,8 @@ class Lightning_Unet(pl.LightningModule):
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--batch_size", type=int, default=2, help='Batch size', dest='batch_size')
-        parser.add_argument("--learning_rate", type=float, default=1e-3, help='Learning rate')
+        # From the generalizedDiceLoss paper
+        parser.add_argument("--learning_rate", type=float, default=1e-4, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')
         parser.add_argument("--down_sample", type=str, default="max", help="the way to down sample")
         parser.add_argument("--loss", type=str, default="BCEWL", help='Loss Function')
