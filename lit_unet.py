@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Dict, Optional
 import pytorch_lightning as pl
 from torchio import DATA
 from torch.utils.data import DataLoader
@@ -21,6 +21,7 @@ from monai.losses import GeneralizedDiceLoss, DiceLoss
 import torchio
 import torch
 import random
+from pytorch_lightning.metrics.functional import dice_score, to_onehot
 
 
 class Lightning_Unet(pl.LightningModule):
@@ -49,15 +50,15 @@ class Lightning_Unet(pl.LightningModule):
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 10
+        self.max_queue_length = 1000
         self.patch_size = 96
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 10
         self.val_times = 0
         self.num_workers = 0
-        # if not self.hparams.cedar:
-        #     self.num_workers = 20
+        if not self.hparams.cedar:
+            self.num_workers = 0
 
         if not COMPUTECANADA:
             self.num_workers = 8
@@ -67,7 +68,7 @@ class Lightning_Unet(pl.LightningModule):
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
             num_subjects = len(self.subjects)
-            num_training_subjects = int(num_subjects * 0.95)  # （5074+359+21） * 0.9 used for training
+            num_training_subjects = int(num_subjects * 0.97)  # （5074+359+21） * 0.9 used for training
             self.training_subjects = self.subjects[:num_training_subjects]
             self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -83,7 +84,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.95)  # （5074+359+21） * 0.9 used for training
+        num_training_subjects = int(num_subjects * 0.97)  # （5074+359+21） * 0.9 used for training
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -98,7 +99,7 @@ class Lightning_Unet(pl.LightningModule):
             # but more CPU memory is needed to store the patches.
             max_length=self.max_queue_length,
             # Number of patches to extract from each volume.
-            # A small number of patches ensures a large variability in the queue,   ??? how to understand this??
+            # A small number of patches ensures a large variability in the queue,
             # but training will be slower.
             samples_per_volume=self.samples_per_volume,
             #  A sampler used to extract patches from the volumes.
@@ -119,22 +120,22 @@ class Lightning_Unet(pl.LightningModule):
         return training_loader
 
     def val_dataloader(self) -> DataLoader:
-        val_transform = get_val_transform()
-        val_imageDataset = torchio.ImagesDataset(self.validation_subjects, transform=val_transform)
 
-        patches_validation_set = torchio.Queue(
-            subjects_dataset=val_imageDataset,
-            max_length=self.max_queue_length,
-            samples_per_volume=self.samples_per_volume,
-            sampler=torchio.sampler.UniformSampler(self.patch_size),
-            num_workers=self.num_workers,
-            shuffle_subjects=False,
-            shuffle_patches=True,
-            verbose=True,
-        )
+        val_imageDataset = torchio.ImagesDataset(self.validation_subjects)
 
-        val_loader = DataLoader(patches_validation_set,
-                                batch_size=self.hparams.batch_size * 2)
+        # patches_validation_set = torchio.Queue(
+        #     subjects_dataset=val_imageDataset,
+        #     max_length=self.max_queue_length,
+        #     samples_per_volume=self.samples_per_volume,
+        #     sampler=torchio.sampler.UniformSampler(self.patch_size),
+        #     num_workers=self.num_workers,
+        #     shuffle_subjects=False,
+        #     shuffle_patches=True,
+        #     verbose=True,
+        # )
+
+        # the batch_size here only could be 1 because we only could handle one image to aggregate
+        val_loader = DataLoader(val_imageDataset, batch_size=1)
         print('Validation set:', len(val_loader), 'subjects')
         return val_loader
 
@@ -150,7 +151,7 @@ class Lightning_Unet(pl.LightningModule):
     # need to adding more things
     def configure_optimizers(self):
         # Setting up the optimizer
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
         return optimizer
 
@@ -166,12 +167,13 @@ class Lightning_Unet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         inputs, targets = self.prepare_batch(batch)
-        probs = self(inputs)
-        dice, iou, _, _ = get_score(probs, targets, include_background=True)
+        # print(f"inputs shape: {inputs.shape}")
+        pred = self(inputs)
+        # diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        # loss = diceloss.forward(input=probs, target=targets)
+        # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
-        # loss = gdloss.forward(input=probs, target=targets)
-        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
-        loss = diceloss.forward(input=probs, target=targets)
+        # loss = gdloss.forward(input=batch_preds, target=batch_targets)
         # if batch_idx != 0 and ((self.current_epoch >= 1 and dice.item() < 0.5) or batch_idx % 100 == 0):
         #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
         #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
@@ -180,42 +182,51 @@ class Lightning_Unet(pl.LightningModule):
         #     dice_score, _, _, _ = get_score(torch.unsqueeze(prob, 0), torch.unsqueeze(target, 0))
         #     log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
-        tensorboard_logs = {"train_loss": loss, "train_IoU": iou, "train_dice": dice}
-        return {'loss': loss, "log": tensorboard_logs}
-
-    def validation_step(self, batch, batch_id):
-        inputs, targets = self.prepare_batch(batch)
-        probs = self(inputs)
-        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
-        # loss = gdloss.forward(input=probs, target=targets)
+        # del inputs  # Just a Try
         diceloss = DiceLoss(include_background=True, to_onehot_y=True)
-        loss = diceloss.forward(input=probs, target=targets)
-        dice, iou, sensitivity, specificity = get_score(probs, targets)
-        return {'val_step_loss': loss,
-                'val_step_dice': dice,
-                'val_step_IoU': iou,
-                "val_step_sensitivity": sensitivity,
-                "val_step_specificity": specificity
-                }
+        loss = diceloss.forward(input=pred, target=targets)
+        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        # loss = gdloss.forward(input=batch_preds, target=batch_targets)
+        return {
+            'loss': loss,
+            # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
+            # So they would return 0 on some of the classes, making the matrixs not accurate
+            # 'log': {'train_loss': loss, 'train_dice': dice, 'train_IoU': iou},
+            'log': {'train_loss': loss},
+            # 'progress_bar': {'train_loss': loss, 'train_dice': dice}
+            # 'progress_bar': {'train_loss': loss}
+        }
 
-    # Called at the end of the validation epoch with the outputs of all validation steps.
-    def validation_epoch_end(self, outputs):
-        # visualization part
-        cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
-        cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
+    # It supports only need when using DP or DDP2, I should not need it because I am using ddp
+    # but I have some problem with the dice score, So I am just trying ...
+    # def training_step_end(self, outputs) -> Dict[str, Union[Tensor, Dict[str, Tensor]]]:
+    #     print(f"outputs shape: {outputs['train_step_preds'].shape}")
+    #     batch_preds = torch.stack([x['train_step_preds'] for x in outputs])
+    #     batch_targets = torch.stack([x['train_step_target'] for x in outputs])
+        # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
+        # dice = dice_score(pred=batch_preds, target=batch_targets, bg=True)
 
-        cur_img_subject = torchio.Subject(
-            img=torchio.Image(cur_img_path, type=torchio.INTENSITY)
-        )
-        cur_label_subject = torchio.Subject(
-            img=torchio.Image(cur_label_path, type=torchio.LABEL)
-        )
+    def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None):
+        if if_path:
+            cur_img_subject = torchio.Subject(
+                img=torchio.Image(input, type=torchio.INTENSITY)
+            )
+            cur_label_subject = torchio.Subject(
+                img=torchio.Image(target, type=torchio.LABEL)
+            )
+        else:
+            cur_img_subject = torchio.Subject(
+                img=torchio.Image(tensor=input.squeeze().cpu().detach(), type=torchio.INTENSITY)
+            )
+            cur_label_subject = torchio.Subject(
+                img=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
+            )
 
         transform = get_val_transform()
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
 
-        patch_overlap = 10  # is there any constrain?
+        patch_overlap = 20  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
             preprocessed_img,
             self.patch_size,
@@ -227,35 +238,82 @@ class Lightning_Unet(pl.LightningModule):
 
         for patches_batch in patch_loader:
             input_tensor = patches_batch['img'][torchio.DATA]
-            input_tensor = input_tensor.type_as(outputs[0]['val_step_loss'])
+            if not if_path:
+                input_tensor = input_tensor.type_as(input)
+            else:
+                input_tensor = input_tensor.type_as(type_as_tensor[0]['val_step_dice'])
             locations = patches_batch[torchio.LOCATION]
-            preds = self(input_tensor)
-            labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)
+            preds = self(input_tensor)  # use cuda
+            labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
             aggregator.add_batch(labels, locations)
-        output_tensor = aggregator.get_output_tensor()
+        output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
 
-        dice, _, _, _ = get_score(pred=output_tensor, target=preprocessed_label.img.data)
+        if if_path:
+            return preprocessed_img.img.data, output_tensor, preprocessed_label.img.data
+        else:
+            return output_tensor, preprocessed_label.img.data
 
+    def validation_step(self, batch, batch_id):
+        input, target = self.prepare_batch(batch)
+        output_tensor, target_tensor = self.compute_from_aggregating(input, target, False)  # in CPU
+
+        # pred = self(inputs)
+        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        # loss = gdloss.forward(input=probs, target=targets)
+
+        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        output_tensor = to_onehot(output_tensor, num_classes=139)
+        loss = diceloss.forward(input=output_tensor, target=target_tensor.unsqueeze(dim=1))  # all in CPU
+        loss_cuda = loss.type_as(input)
+        output_tensor_cuda = output_tensor.type_as(input)
+        target_tensor_cuda = target_tensor.type_as(input)
+        del output_tensor, target_tensor, loss, input, target
+        dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda)
+        return {'val_step_loss': loss_cuda,
+                'val_step_dice': dice,
+                'val_step_IoU': iou,
+                "val_step_sensitivity": sensitivity,
+                "val_step_specificity": specificity}
+
+    # def validation_step_end(self, outputs) -> Dict[str, Tensor]:
+    #     batch_preds = torch.stack([x['val_step_preds'] for x in outputs])
+    #     batch_targets = torch.stack([x['val_step_target'] for x in outputs])
+
+    # Called at the end of the validation epoch with the outputs of all validation steps.
+    def validation_epoch_end(self, outputs):
+        # visualization part
+        cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
+        cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
+
+        img, output_tensor, target_tensor = self.compute_from_aggregating(cur_img_path, cur_label_path,
+                                                                          if_path=True, type_as_tensor=outputs)
+        # print(f"validation_epoch_end_output_tensor: {output_tensor.requires_grad}")
+        # print(f"validation_epoch_end_target_tensor: {target_tensor.requires_grad}")
+        output_tensor_cuda = output_tensor.type_as(outputs[0]['val_step_dice'])
+        target_tensor_cuda = target_tensor.type_as(outputs[0]['val_step_dice'])
+        del output_tensor, target_tensor
+        # using CUDA
+        dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda)
         log_all_info(self,
-                     preprocessed_img.img.data,
-                     preprocessed_label.img.data,
-                     output_tensor,
+                     img,
+                     target_tensor_cuda,
+                     output_tensor_cuda,
                      dice,
                      self.val_times)
-
         self.val_times += 1
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
         avg_val_dice = torch.stack([x['val_step_dice'] for x in outputs]).mean()
         tensorboard_logs = {
-            "val_loss": outputs[0]['val_step_loss'],  # the outputs is a dict wrapped in a list
+            "val_loss": outputs[0]['val_step_loss'],  # to compare with train
             "val_dice": outputs[0]['val_step_dice'],
             "val_IoU": outputs[0]['val_step_IoU'],
             "val_sensitivity": outputs[0]['val_step_sensitivity'],
             "val_specificity": outputs[0]['val_step_specificity']
         }
-        return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs}
+        return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs,
+                'progress_bar': {'val_dice': avg_val_dice}}
 
     def test_step(self, batch, batch_idx):
         inputs, targets = self.prepare_batch(batch)
@@ -304,7 +362,7 @@ class Lightning_Unet(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--batch_size", type=int, default=2, help='Batch size', dest='batch_size')
         # From the generalizedDiceLoss paper
-        parser.add_argument("--learning_rate", type=float, default=1e-4, help='Learning rate')
+        parser.add_argument("--learning_rate", type=float, default=1e-3, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')
         parser.add_argument("--down_sample", type=str, default="max", help="the way to down sample")
         parser.add_argument("--loss", type=str, default="BCEWL", help='Loss Function')
