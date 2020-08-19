@@ -1,27 +1,102 @@
-from typing import Union, List, Dict, Optional
 import pytorch_lightning as pl
 from torchio import DATA
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
-from data.get_subjects import get_subjects, get_processed_subjects
-from data.const import CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1, COMPUTECANADA
+from data.get_subjects import get_processed_subjects
+from data.const import COMPUTECANADA
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
-from data.const import SIZE
 from model.unet.unet import UNet
+from model.highResNet.highresnet import HighResNet
 from utils.matrix import get_score
-from utils.loss import dice_loss
-from torch.optim.lr_scheduler import MultiStepLR
-import nibabel as nib
-import numpy as np
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+import inspect
 import torch.nn.functional as F
 from postprocess.visualize import log_all_info
 from torch import Tensor
-from monai.losses import GeneralizedDiceLoss, DiceLoss
+from monai.losses import DiceLoss
+# from utils.gpu_mem_track import MemTracker
 import torchio
 import torch
 import random
-from pytorch_lightning.metrics.functional import dice_score, to_onehot
+from pytorch_lightning.metrics.functional import to_onehot
+
+import gc
+import datetime
+import pynvml
+import numpy as np
+
+
+# class MemTracker(object):
+#     """
+#     Class used to track pytorch memory usage
+#     Arguments:
+#         frame: a frame to detect current py-file runtime
+#         detail(bool, default True): whether the function shows the detail gpu memory usage
+#         path(str): where to save log file
+#         verbose(bool, default False): whether show the trivial exception
+#         device(int): GPU number, default is 0
+#     """
+#     def __init__(self, frame, detail=True, path='', verbose=False, device=0):
+#         self.frame = frame
+#         self.print_detail = detail
+#         self.last_tensor_sizes = set()
+#         self.gpu_profile_fn = path + f'{datetime.datetime.now():%d-%b-%y-%H:%M:%S}-gpu_mem_track.txt'
+#         self.verbose = verbose
+#         self.begin = True
+#         self.device = device
+#
+#         self.func_name = frame.f_code.co_name
+#         self.filename = frame.f_globals["__file__"]
+#         if (self.filename.endswith(".pyc") or
+#                 self.filename.endswith(".pyo")):
+#             self.filename = self.filename[:-1]
+#         self.module_name = self.frame.f_globals["__name__"]
+#         self.curr_line = self.frame.f_lineno
+#
+#     def get_tensors(self):
+#         for obj in gc.get_objects():
+#             try:
+#                 if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+#                     tensor = obj
+#                 else:
+#                     continue
+#                 if tensor.is_cuda:
+#                     yield tensor
+#             except Exception as e:
+#                 if self.verbose:
+#                     print('A trivial exception occured: {}'.format(e))
+#
+#     def track(self):
+#         """
+#         Track the GPU memory usage
+#         """
+#         pynvml.nvmlInit()
+#         handle = pynvml.nvmlDeviceGetHandleByIndex(self.device)
+#         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
+#         self.curr_line = self.frame.f_lineno
+#         where_str = self.module_name + ' ' + self.func_name + ':' + ' line ' + str(self.curr_line)
+#
+#         with open(self.gpu_profile_fn, 'a+') as f:
+#
+#             if self.begin:
+#                 f.write(f"GPU Memory Track | {datetime.datetime.now():%d-%b-%y-%H:%M:%S} |"
+#                         f" Total Used Memory:{meminfo.used/1000**2:<7.1f}Mb\n\n")
+#                 self.begin = False
+#
+#             if self.print_detail is True:
+#                 ts_list = [tensor.size() for tensor in self.get_tensors()]
+#                 new_tensor_sizes = {(type(x), tuple(x.size()), ts_list.count(x.size()), np.prod(np.array(x.size()))*4/1000**2)
+#                                     for x in self.get_tensors()}
+#                 for t, s, n, m in new_tensor_sizes - self.last_tensor_sizes:
+#                     f.write(f'+ | {str(n)} * Size:{str(s):<20} | Memory: {str(m*n)[:6]} M | {str(t):<20}\n')
+#                 for t, s, n, m in self.last_tensor_sizes - new_tensor_sizes:
+#                     f.write(f'- | {str(n)} * Size:{str(s):<20} | Memory: {str(m*n)[:6]} M | {str(t):<20} \n')
+#                 self.last_tensor_sizes = new_tensor_sizes
+#
+#             f.write(f"\nAt {where_str:<50}"
+#                     f"Total Used Memory:{meminfo.used/1000**2:<7.1f}Mb\n\n")
+#
+#         pynvml.nvmlShutdown()
 
 
 class Lightning_Unet(pl.LightningModule):
@@ -35,18 +110,24 @@ class Lightning_Unet(pl.LightningModule):
         self.module_type = 'Unet'
         self.downsampling_type = 'max'
         self.normalization = 'InstanceNorm3d'
-
-        self.unet = UNet(
-            in_channels=1,
-            out_classes=self.out_classes,
-            num_encoding_blocks=self.deepth,
-            out_channels_first_layer=32,
-            kernal_size=self.kernal_size,
-            normalization=self.normalization,
-            module_type=self.module_type,
-            downsampling_type=self.downsampling_type,
-            dropout=0,
-        )
+        if self.hparams.model == "unet":
+            self.unet = UNet(
+                in_channels=1,
+                out_classes=self.out_classes,
+                num_encoding_blocks=self.deepth,
+                out_channels_first_layer=16,
+                kernal_size=self.kernal_size,
+                normalization=self.normalization,
+                module_type=self.module_type,
+                downsampling_type=self.downsampling_type,
+                dropout=0,
+            )
+        elif self.hparams.model == "highResNet":
+            self.unet = HighResNet(
+                in_channels=1,
+                out_channels=self.out_classes,
+                dimensions=3
+            )
 
         # torchio parameters
         # ?need to try to find the suitable value
@@ -54,13 +135,15 @@ class Lightning_Unet(pl.LightningModule):
         self.patch_size = 96
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
-        self.samples_per_volume = 10
+        self.samples_per_volume = 5
         self.val_times = 0
         self.num_workers = 0
         if not self.hparams.cedar:
             self.num_workers = 0
 
         if not COMPUTECANADA:
+            self.max_queue_length = 10
+            self.patch_size = 24
             self.num_workers = 8
             self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
                 whether_use_cropped_and_resample_img=True
@@ -68,7 +151,7 @@ class Lightning_Unet(pl.LightningModule):
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
             num_subjects = len(self.subjects)
-            num_training_subjects = int(num_subjects * 0.97)  # （5074+359+21） * 0.9 used for training
+            num_training_subjects = int(num_subjects * 0.99)  # （5074+359+21） * 0.9 used for training
             self.training_subjects = self.subjects[:num_training_subjects]
             self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -84,7 +167,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.97)  # （5074+359+21） * 0.9 used for training
+        num_training_subjects = int(num_subjects * 0.99)  # （5074+359+21） * 0.9 used for training
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -120,7 +203,6 @@ class Lightning_Unet(pl.LightningModule):
         return training_loader
 
     def val_dataloader(self) -> DataLoader:
-
         val_imageDataset = torchio.ImagesDataset(self.validation_subjects)
 
         # patches_validation_set = torchio.Queue(
@@ -153,7 +235,9 @@ class Lightning_Unet(pl.LightningModule):
         # Setting up the optimizer
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
-        return optimizer
+        scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.5,
+                                      patience=4, min_lr=1e-6)
+        return [optimizer], [scheduler]
 
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
@@ -166,9 +250,16 @@ class Lightning_Unet(pl.LightningModule):
         return inputs, targets
 
     def training_step(self, batch, batch_idx):
+        # frame = inspect.currentframe()
+        # gpu_tracker = MemTracker(frame)
+
+        # gpu_tracker.track()
         inputs, targets = self.prepare_batch(batch)
-        # print(f"inputs shape: {inputs.shape}")
         pred = self(inputs)
+        # gpu_tracker.track()
+
+        # print('Model {} : params: {:4f}M'.format(._get_name(), para * type_size / 1000 / 1000))
+
         # diceloss = DiceLoss(include_background=True, to_onehot_y=True)
         # loss = diceloss.forward(input=probs, target=targets)
         # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
@@ -183,8 +274,13 @@ class Lightning_Unet(pl.LightningModule):
         #     log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
         # del inputs  # Just a Try
+        # print(f"inputs shape: {inputs.shape}")
+        # print(f"target shape: {targets.shape}")
+        # print(f"preds shape: {pred.shape}")
         diceloss = DiceLoss(include_background=True, to_onehot_y=True)
         loss = diceloss.forward(input=pred, target=targets)
+        # gpu_tracker.track()
+
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
         return {
@@ -315,44 +411,44 @@ class Lightning_Unet(pl.LightningModule):
         return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs,
                 'progress_bar': {'val_dice': avg_val_dice}}
 
-    def test_step(self, batch, batch_idx):
-        inputs, targets = self.prepare_batch(batch)
-        # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
-        logits = self(inputs)
-        logits = F.interpolate(logits, size=logits.size()[2:])
-        probs = torch.sigmoid(logits)
-        dice, iou, _, _ = get_score(probs, targets)
-        # if batch_idx != 0 and batch_idx % 50 == 0:  # save total about 10 picture
-        #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
-        #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
-        #     logit = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
-        #     # need to add the dice score here
-        #     log_all_info(self, input, target, logit, batch_idx, "testing", 0.5)
-        # loss = F.binary_cross_entropy_with_logits(logits, targets)
-        loss = dice_loss(probs, targets)
-        dice, iou, sensitivity, specificity = get_score(probs, targets)
-        return {'test_step_loss': loss,
-                'test_step_dice': dice,
-                'test_step_IoU': iou,
-                'test_step_sensitivity': sensitivity,
-                'test_step_specificity': specificity
-                }
+    # def test_step(self, batch, batch_idx):
+    #     inputs, targets = self.prepare_batch(batch)
+    #     # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
+    #     logits = self(inputs)
+    #     logits = F.interpolate(logits, size=logits.size()[2:])
+    #     probs = torch.sigmoid(logits)
+    #     dice, iou, _, _ = get_score(probs, targets)
+    #     # if batch_idx != 0 and batch_idx % 50 == 0:  # save total about 10 picture
+    #     #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
+    #     #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
+    #     #     logit = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
+    #     #     # need to add the dice score here
+    #     #     log_all_info(self, input, target, logit, batch_idx, "testing", 0.5)
+    #     # loss = F.binary_cross_entropy_with_logits(logits, targets)
+    #     loss = dice_loss(probs, targets)
+    #     dice, iou, sensitivity, specificity = get_score(probs, targets)
+    #     return {'test_step_loss': loss,
+    #             'test_step_dice': dice,
+    #             'test_step_IoU': iou,
+    #             'test_step_sensitivity': sensitivity,
+    #             'test_step_specificity': specificity
+    #             }
 
-    def test_epoch_end(self, outputs):
-        # torch.stack: Concatenates sequence of tensors along a new dimension.
-        avg_loss = torch.stack([x['test_step_loss'] for x in outputs]).mean()
-        avg_dice = torch.stack([x['test_step_dice'] for x in outputs]).mean()
-        avg_IoU = torch.stack([x['test_step_IoU'] for x in outputs]).mean()
-        avg_sensitivity = torch.stack([x['test_step_sensitivity'] for x in outputs]).mean()
-        avg_specificity = torch.stack([x['test_step_specificity'] for x in outputs]).mean()
-        tensorboard_logs = {
-            "avg_test_loss": avg_loss.item(),  # the outputs is a dict wrapped in a list
-            "avg_test_dice": avg_dice.item(),
-            "avg_test_IoU": avg_IoU.item(),
-            "avg_test_sensitivity": avg_sensitivity.item(),
-            "avg_test_specificity": avg_specificity.item(),
-        }
-        return {'log': tensorboard_logs}
+    # def test_epoch_end(self, outputs):
+    #     # torch.stack: Concatenates sequence of tensors along a new dimension.
+    #     avg_loss = torch.stack([x['test_step_loss'] for x in outputs]).mean()
+    #     avg_dice = torch.stack([x['test_step_dice'] for x in outputs]).mean()
+    #     avg_IoU = torch.stack([x['test_step_IoU'] for x in outputs]).mean()
+    #     avg_sensitivity = torch.stack([x['test_step_sensitivity'] for x in outputs]).mean()
+    #     avg_specificity = torch.stack([x['test_step_specificity'] for x in outputs]).mean()
+    #     tensorboard_logs = {
+    #         "avg_test_loss": avg_loss.item(),  # the outputs is a dict wrapped in a list
+    #         "avg_test_dice": avg_dice.item(),
+    #         "avg_test_IoU": avg_IoU.item(),
+    #         "avg_test_sensitivity": avg_sensitivity.item(),
+    #         "avg_test_specificity": avg_specificity.item(),
+    #     }
+    #     return {'log': tensorboard_logs}
 
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:
@@ -364,6 +460,7 @@ class Lightning_Unet(pl.LightningModule):
         # From the generalizedDiceLoss paper
         parser.add_argument("--learning_rate", type=float, default=1e-3, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')
-        parser.add_argument("--down_sample", type=str, default="max", help="the way to down sample")
+        parser.add_argument("--down_sample", type=str, default="max", help='the way to down sample')
         parser.add_argument("--loss", type=str, default="BCEWL", help='Loss Function')
+        parser.add_argument("--model", type=str, default="unet", help='to specify which model to choose')
         return parser

@@ -2,12 +2,12 @@
 #SBATCH --account=def-jlevman
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:v100l:4  # on Cedar
-#SBATCH --ntasks-per-node=2
-#SBATCH --cpus-per-task=16  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
+#SBATCH --ntasks-per-node=2  # try again
+#SBATCH --cpus-per-task=8  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=192000M  # memory
 #SBATCH --output=seg138-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=04-00:00      # time (DD-HH:MM)
-#SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
+#SBATCH --time=00-12:00      # time (DD-HH:MM)
+#SBATCH --mail-user=x2019cwn@stfx.ca # used to send emailS
 #SBATCH --mail-type=ALL
 
 module load python/3.6 cuda cudnn gcc/8.3.0
@@ -26,6 +26,9 @@ source ~/ENV/bin/activate && echo "$(date +"%T"):  Activated python virtualenv"
 export NCCL_DEBUG=INFO
 export PYTHONFAULTHANDLER=1
 export NCCL_SOCKET_IFNAME=^docker0,lo
+
+# force to synchronization, can pinpoint the exact number of lines of error code where our memory operation is observed
+CUDA_LAUNCH_BLOCKING=1
 
 echo -e '\n'
 cd $SLURM_TMPDIR
@@ -46,13 +49,15 @@ LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_3/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_5/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
-       --name="score and loss, include_background=True, dice loss" \
+       --name="score and loss, include_background=True, dice loss, one more bottom layer, and enable visulization" \
        --TensorBoardLogger="$LOG_DIR" \
+       --model="unet" \
        --cedar
+       # --checkpoint_file="epoch=2-val_dice=0.44385.ckpt" \
 
 
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py

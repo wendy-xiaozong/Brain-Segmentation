@@ -1,5 +1,5 @@
 from pytorch_lightning import Trainer, loggers
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateLogger
 from argparse import ArgumentParser
 from lit_unet import Lightning_Unet
 from pathlib import Path
@@ -15,7 +15,6 @@ def main(hparams):
     Trains the Lightning model as specified in `hparams`
     """
     model = Lightning_Unet(hparams)
-
     if COMPUTECANADA:
         cur_path = Path(__file__).resolve().parent.parent
         default_root_dir = cur_path / "log"
@@ -46,7 +45,7 @@ def main(hparams):
     early_stop_callback = EarlyStopping(
         monitor='val_loss',
         min_delta=0.00,
-        patience=5,
+        patience=60,
         strict=True,
         verbose=False,
         mode='min'
@@ -58,21 +57,23 @@ def main(hparams):
         gpus=hparams.gpus,
         num_nodes=hparams.nodes,
         distributed_backend='ddp',
-        # the next two can be combined to use
-        val_check_interval=0.15,
-        check_val_every_n_epoch=3,
+        # the next two can be combined to use, in a straight way
+        val_check_interval=0.1,
+        # check_val_every_n_epoch=3,
         # log every k batches instead
         row_log_interval=10,
         # set the interval at which you want to log using this trainer flag.
         log_save_interval=2,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
+        callbacks=[LearningRateLogger()],
         # runs 1 train, val, test  batch and program ends
         fast_dev_run=False,
         default_root_dir=default_root_dir,
         logger=tb_logger,
         max_epochs=10000,
-        # resume_from_checkpoint='./log/checkpoint',
+        # this need to be string
+        # resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
         profiler=True,
         auto_lr_find=False,
         # simulate a larger batch size for gradient descent to provide a good estimate
@@ -110,6 +111,8 @@ if __name__ == "__main__":
     parser.add_argument("--name", dest='name', default="using cropped data")
     parser.add_argument("--cedar", action="store_true",
                         help="Whether you are using cedar, it related to the cpu number this code used")
+    parser.add_argument("--checkpoint_file", type=str,
+                        help="resume_from_checkpoint_file")
     parser = Lightning_Unet.add_model_specific_args(parser)
     hparams = parser.parse_args()
 
