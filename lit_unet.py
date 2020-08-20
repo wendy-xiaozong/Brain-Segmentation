@@ -469,4 +469,5 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--deepth", type=int, default=4, help="the deepth of the unet")
         parser.add_argument("--kernal_size", type=int, default=5, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
+        parser.add_argument("--patch_overlap", type=int, default=20)
         return parser

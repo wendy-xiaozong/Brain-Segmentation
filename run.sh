@@ -51,6 +51,7 @@ KERNEL_SIZE=3
 DEEPTH=5
 PATCH_SIZE=128
 MODEL=unet
+PATCH_OVERLAP=30
 # MODEL=highResNet
 RUN=38
 LOG_DIR=/home/jueqi/scratch/seg138_log
@@ -70,7 +71,8 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --deepth=$DEEPTH \
        --kernel_size=$KERNEL_SIZE \
        --fast_dev_run \
-       --patch_size=$PATCH_SIZE
+       --patch_size=$PATCH_SIZE \
+       --patch_overlap=$PATCH_OVERLAP
 #       --include_background
 #       --checkpoint_file="epoch=0-val_dice=0.22192.ckpt"
 
