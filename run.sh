@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-jlevman
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:v100l:4  # on Cedar
+#SBATCH --gres=gpu:v100l:2  # on Cedar
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
@@ -42,17 +42,17 @@ tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(d
 
 cd work
 
-BATCH_SIZE=4
+BATCH_SIZE=1
 NODES=1
-GPUS=4
+GPUS=2
 OUT_CHANNELS_FIRST_LAYER=64
 LEARNING_RATE=1e-4
 KERNEL_SIZE=3
 DEEPTH=5
-PATCH_SIZE=128
+PATCH_SIZE=96
 MODEL=unet
-PATCH_OVERLAP=30
 # MODEL=highResNet
+PATCH_OVERLAP=10
 RUN=38
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
