@@ -45,7 +45,7 @@ def main(hparams):
     early_stop_callback = EarlyStopping(
         monitor='val_loss',
         min_delta=0.00,
-        patience=60,
+        patience=300,
         strict=True,
         verbose=False,
         mode='min'
@@ -68,7 +68,7 @@ def main(hparams):
         early_stop_callback=early_stop_callback,
         callbacks=[LearningRateLogger()],
         # runs 1 train, val, test  batch and program ends
-        fast_dev_run=False,
+        fast_dev_run=hparams.fast_dev_run,
         default_root_dir=default_root_dir,
         logger=tb_logger,
         max_epochs=10000,
@@ -109,10 +109,10 @@ if __name__ == "__main__":
     parser.add_argument("--TensorBoardLogger", dest='TensorBoardLogger', default='/home/jq/Desktop/log',
                         help='TensorBoardLogger dir')
     parser.add_argument("--name", dest='name', default="using cropped data")
-    parser.add_argument("--cedar", action="store_true",
-                        help="Whether you are using cedar, it related to the cpu number this code used")
     parser.add_argument("--checkpoint_file", type=str,
                         help="resume_from_checkpoint_file")
+    parser.add_argument("--fast_dev_run", action="store_true",
+                        help='whether to run 1 train, val, test  batch and program ends')
     parser = Lightning_Unet.add_model_specific_args(parser)
     hparams = parser.parse_args()
 

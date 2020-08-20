@@ -14,11 +14,16 @@
 - [X] add the id in the log image part
 - [X] add the one more layer
 - [X] set the `num_workers` = 0
+- [X] make the torchio.inference.GridAggregator work in CPU
+- [X] make the training like the HighResNet
+- [X] using He initialization, and only using two GPU (The default one in pytorch is kaiming's initialization)
+- [X] write the whole picture part in every validation step
+- [ ] read other people's patch size (?), and training time, and learning rate
+- [ ] check the learning rate 
+- [ ] change the learning rate to more larger
 - [ ] check what I did in the padding part
 - [ ] Try dropout
 - [ ] the filter in each layer might need to change
-- [ ] add the run time params
-- [ ] Rebuild the HighResNet and load the data! to train again
 - [ ] try transfer learning to speed up training
 - [ ] why the training loss label all equal to 1
 - [ ] might need more place to overlap with each other(could be a place to dip into) (how to remove borders) (look for the border pharams) (how the torchio deal with the overlapping part?)
@@ -26,7 +31,6 @@
 - [ ] why the matrix is different from the loss??
 - [ ] why the print network show so less information now?
 - [ ] tune the patch based parameters to make the train faster
-- [ ] use cropped image to train
 - [ ] remember to find the suitable patch size
 - [ ] make a parameter of whether to compute the background
 - [ ] to test the dice loss
@@ -67,7 +71,10 @@ the label data (in ADNI, label data have an extra dimension like this (1, 192, )
 
 # Some Performance
 - if not using resample, using the orginal dice loss ( reduce by mean ), the loss would drop at a special moment to around 0.4, and all predict the background class. 
-- but after resample, the model can learn. 
+- But after using the resample, cropped, and GeneralizedDiceLoss. The model would not learn at all ( the loss is always around 1). Very weird
+- ddp2 cannot be used in Compute Canada
+- When I directly using the patches to compute the dice score, it return quite small number (almost equal to 0), but when I use the whole image to compute, it would return the normal number
+- Let my model run with only one GPU, ( this isn't working at all )
 
 
 ![](./img/brain_parcellation.png)

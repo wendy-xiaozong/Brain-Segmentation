@@ -105,8 +105,8 @@ class Lightning_Unet(pl.LightningModule):
         self.hparams = hparams
 
         self.out_classes = 139
-        self.deepth = 4
-        self.kernal_size = 5  # whether this affect the model to learn?
+        self.deepth = self.hparams.deepth
+        self.kernal_size = self.hparams.kernal_size  # whether this affect the model to learn?
         self.module_type = 'Unet'
         self.downsampling_type = 'max'
         self.normalization = 'InstanceNorm3d'
@@ -115,7 +115,7 @@ class Lightning_Unet(pl.LightningModule):
                 in_channels=1,
                 out_classes=self.out_classes,
                 num_encoding_blocks=self.deepth,
-                out_channels_first_layer=16,
+                out_channels_first_layer=self.hparams.out_channels_first_layer,
                 kernal_size=self.kernal_size,
                 normalization=self.normalization,
                 module_type=self.module_type,
@@ -131,15 +131,15 @@ class Lightning_Unet(pl.LightningModule):
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 1000
-        self.patch_size = 96
+        self.max_queue_length = 10
+        self.patch_size = self.hparams.patch_size
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 5
         self.val_times = 0
         self.num_workers = 0
-        if not self.hparams.cedar:
-            self.num_workers = 0
+        if not self.hparams.include_background:
+            print("It is not included the background.")
 
         if not COMPUTECANADA:
             self.max_queue_length = 10
@@ -274,10 +274,7 @@ class Lightning_Unet(pl.LightningModule):
         #     log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
         # del inputs  # Just a Try
-        # print(f"inputs shape: {inputs.shape}")
-        # print(f"target shape: {targets.shape}")
-        # print(f"preds shape: {pred.shape}")
-        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
         loss = diceloss.forward(input=pred, target=targets)
         # gpu_tracker.track()
 
@@ -357,14 +354,15 @@ class Lightning_Unet(pl.LightningModule):
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=probs, target=targets)
 
-        diceloss = DiceLoss(include_background=True, to_onehot_y=True)
+        diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
         output_tensor = to_onehot(output_tensor, num_classes=139)
         loss = diceloss.forward(input=output_tensor, target=target_tensor.unsqueeze(dim=1))  # all in CPU
         loss_cuda = loss.type_as(input)
         output_tensor_cuda = output_tensor.type_as(input)
         target_tensor_cuda = target_tensor.type_as(input)
         del output_tensor, target_tensor, loss, input, target
-        dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda)
+        dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
+                                                        include_background=True)
         return {'val_step_loss': loss_cuda,
                 'val_step_dice': dice,
                 'val_step_IoU': iou,
@@ -389,7 +387,8 @@ class Lightning_Unet(pl.LightningModule):
         target_tensor_cuda = target_tensor.type_as(outputs[0]['val_step_dice'])
         del output_tensor, target_tensor
         # using CUDA
-        dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda)
+        dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
+                                                        include_background=True)
         log_all_info(self,
                      img,
                      target_tensor_cuda,
@@ -458,9 +457,16 @@ class Lightning_Unet(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--batch_size", type=int, default=2, help='Batch size', dest='batch_size')
         # From the generalizedDiceLoss paper
-        parser.add_argument("--learning_rate", type=float, default=1e-3, help='Learning rate')
+        parser.add_argument("--learning_rate", type=float, default=1e-4, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')
         parser.add_argument("--down_sample", type=str, default="max", help='the way to down sample')
         parser.add_argument("--loss", type=str, default="BCEWL", help='Loss Function')
         parser.add_argument("--model", type=str, default="unet", help='to specify which model to choose')
+        parser.add_argument("--out_channels_first_layer", type=int, default=32, help="the first layer's out channels")
+        parser.add_argument("--run", type=int, default=1, help="number of running times")
+        parser.add_argument("--include_background", action="store_true",
+                            help='whether include background to compute the dice loss and score')
+        parser.add_argument("--deepth", type=int, default=4, help="the deepth of the unet")
+        parser.add_argument("--kernal_size", type=int, default=5, help="the kernal size")
+        parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
         return parser

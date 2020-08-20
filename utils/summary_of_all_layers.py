@@ -8,7 +8,7 @@ from model.highResNet.highresnet import HighResNet
 class MyUnetModel(pl.LightningModule):
     def __init__(self):
         super().__init__()
-        self.example_input_array = torch.zeros(96, 96, 96)
+        self.example_input_array = torch.zeros(1, 1, 96, 96, 96)
 
         self.out_classes = 139
         self.deepth = 4
@@ -35,11 +35,11 @@ class MyUnetModel(pl.LightningModule):
 class HighResNetModel(pl.LightningModule):
     def __init__(self):
         super().__init__()
-        self.example_input_array = torch.zeros(96, 96, 96)
+        self.example_input_array = torch.zeros(1, 1, 96, 96, 96)
 
         self.unet = HighResNet(
             in_channels=1,
-            out_channels=self.out_classes,
+            out_channels=139,
             dimensions=3
         )
 
@@ -50,8 +50,8 @@ class HighResNetModel(pl.LightningModule):
 if __name__ == "__main__":
     myUnet = MyUnetModel()
     print("myUnet Model:")
-    ModelSummary(myUnet, mode="full")
+    print(ModelSummary(myUnet, mode="full"))
 
     highResNet = HighResNetModel()
     print("highResNet Model:")
-    ModelSummary(highResNet, mode="full")
+    print(ModelSummary(highResNet, mode="full"))

@@ -27,20 +27,21 @@ export NCCL_SOCKET_IFNAME=^docker0,lo
 echo -e '\n'
 cd $SLURM_TMPDIR
 mkdir work
+
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
 #tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
-tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/scratch/Data/processed_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
+# tar -tvf .tar | grep ^d
 ## The computations are done, so clean up the data set...
 # avoiding batch_size < gpus number
 
 # run script
 echo -e '\n\n\n'
-python3 /home/jueqi/scratch/Unet_seg138/squeeze_data.py
+python3 /home/jueqi/scratch/Unet_seg138/cropping_resample.py
 
-cd processed_ADNI
-tar -cf /home/jueqi/scratch/Data/processed_ADNI.tar img/ label/
+tar -cf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar cropped_img/ cropped_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
