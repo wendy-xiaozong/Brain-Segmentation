@@ -125,7 +125,10 @@ class BrainSlices:
         self.lightning = lightning
         self.input_img: ndarray = img.cpu().detach().numpy().squeeze()
         # the float value need to cast to np.unit8, for ColorTable and plot
-        self.target_img: ndarray = target_.numpy().squeeze().astype(np.uint8)
+        if target_.is_cuda:
+            self.target_img: ndarray = target_.cpu().detach().numpy().squeeze().astype(np.uint8)
+        else:
+            self.target_img: ndarray = target_.numpy().squeeze().astype(np.uint8)
         self.predict_img: ndarray = prediction.cpu().detach().numpy().squeeze().astype(np.uint8)
 
         si, sj, sk = self.input_img.shape[:3]
@@ -209,9 +212,9 @@ class BrainSlices:
             if title is not None:
                 plt.gcf().suptitle(title)
 
-    def log(self, fig: Figure, dice_score: float) -> None:
+    def log(self, fig: Figure, dice_score: float, val_times: int) -> None:
         logger = self.lightning.logger
-        summary = f"Epoch {self.lightning.current_epoch + 1} dice_score {dice_score}"
+        summary = f"Run:{self.lightning.hparams.run}-Epoch:{self.lightning.current_epoch + 1}-val_time:{val_times}-dice_score:{dice_score:0.5f}"
         logger.experiment.add_figure(summary, fig, close=True)
         # if you want to manually intervene, look at the code at
         # https://github.com/pytorch/pytorch/blob/master/torch/utils/tensorboard/_utils.py
@@ -343,12 +346,12 @@ https://pytorch.org/docs/stable/tensorboard.html
 """
 
 
-def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float) -> None:
+def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float, val_times: int) -> None:
     """Helper for decluttering training loop. Just performs all logging functions."""
     brainSlice = BrainSlices(module, img, target, preb, colors_path=colors_path)
     fig = brainSlice.plot()
 
-    brainSlice.log(fig, dice_score)
+    brainSlice.log(fig, dice_score, val_times)
 
     # mp4_path = Path(__file__).resolve().parent.parent / "mp4"
     # if not os.path.exists(mp4_path):
@@ -357,4 +360,4 @@ def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Ten
     # brainSlice.animate_masks(fig_title=f"epoch: {module.current_epoch}, batch: {batch_idx}, dice_score: {dice_score}",
     #                          outfile=mp4_path / Path(
     #                              f"epoch={module.current_epoch}_batch={batch_idx}_dice_score={dice_score}.mp4"))
-    # log_weights(module)
+    log_weights(module)
