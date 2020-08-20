@@ -319,7 +319,7 @@ class Lightning_Unet(pl.LightningModule):
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
 
-        patch_overlap = 20  # is there any constrain?
+        patch_overlap = 0  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
             preprocessed_img,
             self.patch_size,
