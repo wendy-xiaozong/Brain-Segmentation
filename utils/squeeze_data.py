@@ -1,10 +1,5 @@
 """try to use the whole dataset to predict, and test the result
 """
-from data.const import DATA_ROOT, ADNI_DATASET_DIR_1, ADNI_LABEL
-from data.transform import get_train_transforms
-from data.get_subjects import get_subjects
-from data.get_path import get_path
-from data.const import COMPUTECANADA
 from torchio import DATA
 from pathlib import Path
 from glob import glob
@@ -17,6 +12,10 @@ from torch.utils.data import DataLoader
 import torch
 import os
 
+from data.const import ADNI_DATASET_DIR_1, ADNI_LABEL, COMPUTECANADA, DATA_ROOT
+from data.transform import get_train_transforms
+from data.get_subjects import get_subjects
+from data.get_path import get_path
 
 # def _prepare_data(batch):
 #     inputs, targets = batch["img"][DATA], batch["label"][DATA]
@@ -32,6 +31,7 @@ import os
 #     # target_bin[targets > 0.5] = 1
 #     return inputs, targets
 
+
 def read_data(mri):
     img, label = nib.load(mri.img_path), nib.load(mri.label_path)
     data_np = img.get_data().astype(np.uint8)
@@ -45,11 +45,11 @@ if __name__ == "__main__":
         # DATA_ROOT = Path("/project/6005889/U-Net_MRI-Data")
         # cropped_img_folder = DATA_ROOT / "work" / "img"
         # cropped_label_folder = DATA_ROOT / "work" / "label"
-        processed_folder = DATA_ROOT / "squeezed_ADNI"
+        # DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
+        processed_folder = DATA_ROOT / "processed_ADNI"
         processed_img_folder = processed_folder / "img"
         processed_label_folder = processed_folder / "label"
     else:
-        DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
         processed_folder = DATA_ROOT / "processed_ADNI"
         processed_img_folder = processed_folder / "img"
         processed_label_folder = processed_folder / "label"

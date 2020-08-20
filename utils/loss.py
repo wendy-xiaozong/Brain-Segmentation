@@ -84,3 +84,58 @@ def dice_loss(input: tensor,
 
     return f
 
+
+def softmax_helper(x):
+    rpt = [1 for _ in range(len(x.size()))]
+    rpt[1] = x.size(1)
+    x_max = x.max(1, keepdim=True)[0].repeat(*rpt)
+    e_x = torch.exp(x - x_max)
+    return e_x / e_x.sum(1, keepdim=True).repeat(*rpt)
+
+
+"""
+this function is from https://github.com/MIC-DKFZ/nnUNet/blob/master/nnunet/training/loss_functions/dice_loss.py#L304
+They used in nnUnet
+Give it a try!
+"""
+# def DC_and_CE_loss(soft_dice_kwargs,
+#                    ce_kwargs,
+#                    aggregate="sum",
+#                    square_dice=False,
+#                    weight_ce=1,
+#                    weight_dice=1):
+#     """
+#     :param soft_dice_kwargs:
+#     :param ce_kwargs:
+#     :param aggregate:
+#     :param square_dice:
+#     :param weight_ce:
+#     :param weight_dice:
+#     """
+#     if not square_dice:
+#         dc = SoftDiceLoss(apply_nonlin = )
+#
+#
+# class DC_and_CE_loss(nn.Module):
+#     def __init__(self, soft_dice_kwargs, ce_kwargs, aggregate="sum", square_dice=False, weight_ce=1, weight_dice=1):
+#
+#         super(DC_and_CE_loss, self).__init__()
+#         self.weight_dice = weight_dice
+#         self.weight_ce = weight_ce
+#         self.aggregate = aggregate
+#         self.ce = nn.CrossEntropyLoss(**ce_kwargs)
+#         if not square_dice:
+#             self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+#         else:
+#             self.dc = SoftDiceLossSquared(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+#
+#     def forward(self, net_output, target):
+#         dc_loss = self.dc(net_output, target) if self.weight_dice != 0 else 0
+#         ce_loss = self.ce(net_output, target[:, 0].long()) if self.weight_ce != 0 else 0
+#         if self.aggregate == "sum":
+#             result = self.weight_ce * ce_loss + self.weight_dice * dc_loss
+#         else:
+#             raise NotImplementedError("nah son") # reserved for other stuff (later)
+#         return result
+
+
