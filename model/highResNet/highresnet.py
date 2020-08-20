@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import inspect
 
+from typing import Optional
 from .dilation import DilationBlock
 from .convolution import ConvolutionalBlock
 
@@ -27,6 +28,7 @@ class HighResNet(nn.Module):
             residual=True,
             padding_mode='constant',
             add_dropout_layer=False,
+            initialization: Optional[str] = None,
             ):
         assert dimensions in (2, 3)
         super().__init__()

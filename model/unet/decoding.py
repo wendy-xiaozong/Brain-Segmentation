@@ -135,6 +135,8 @@ class DecodingBlock(nn.Module):
         x = self.upsample(x)  # upConvLayer
         # if self.all_size_input:
         #     x = self.crop(x, skip_connection)  # crop x according skip_connection
+        # print(f"skip_connection shape: {skip_connection.shape}")
+        # print(f"x shape: {x.shape}")
         x = torch.cat((skip_connection, x), dim=CHANNELS_DIMENSION)
 
         if self.module_type == "ResUnet":

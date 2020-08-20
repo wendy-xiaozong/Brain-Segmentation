@@ -1,5 +1,6 @@
 import torch.nn as nn
 from .residual import ResidualBlock
+from typing import Optional
 
 
 class DilationBlock(nn.Module):
@@ -15,6 +16,7 @@ class DilationBlock(nn.Module):
             instance_norm=False,
             residual=True,
             padding_mode='constant',
+            initialization: Optional[str] = None,
             ):
         super().__init__()
         self.in_channels = in_channels
