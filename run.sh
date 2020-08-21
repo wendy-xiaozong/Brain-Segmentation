@@ -71,10 +71,10 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --run=$RUN \
        --deepth=$DEEPTH \
        --kernal_size=$KERNEL_SIZE \
-       --fast_dev_run \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background
+#       --fast_dev_run \
 #       --checkpoint_file="epoch=0-val_dice=0.22192.ckpt"
 
 
