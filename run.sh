@@ -42,7 +42,7 @@ tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(d
 
 cd work
 
-BATCH_SIZE=4
+BATCH_SIZE=2
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
@@ -75,7 +75,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --patch_overlap=$PATCH_OVERLAP \
        --include_background \
        --checkpoint_file="epoch=3-val_dice=0.65432.ckpt" \
-       --fast_dev_run
+       # --fast_dev_run
 
 
 
