@@ -73,7 +73,7 @@ def main(hparams):
         logger=tb_logger,
         max_epochs=10000,
         # this need to be string
-        # resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
+        resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
         profiler=True,
         auto_lr_find=False,
         # simulate a larger batch size for gradient descent to provide a good estimate
@@ -93,7 +93,7 @@ def main(hparams):
     # print(f"recommend learning_rate: {new_lr}")
     # model.hparams.learning_rate = new_lr
 
-    # trainer.fit(model)
+    trainer.fit(model)
     # (1) load the best checkpoint automatically (lightning tracks this for you)
     # trainer.test()
 

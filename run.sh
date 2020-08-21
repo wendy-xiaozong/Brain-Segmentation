@@ -59,7 +59,7 @@ LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_9/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_10/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
@@ -74,8 +74,8 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background \
-       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt"
-#        --fast_dev_run
+       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt" \
+       --fast_dev_run
 
 
 
