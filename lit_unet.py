@@ -138,7 +138,6 @@ class Lightning_Unet(pl.LightningModule):
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
         self.samples_per_volume = 5
-        self.val_times = 0
         self.num_workers = 0
         if not self.hparams.include_background:
             print("It is not included the background.")
@@ -173,6 +172,8 @@ class Lightning_Unet(pl.LightningModule):
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
         self.test_subjects = self.subjects[:int(num_subjects * 0.05)]
+        self.val_times = 0
+        self.test_times = 0
 
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
@@ -444,13 +445,13 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
-
         log_all_info(self,
                      img,
                      target_tensor_cuda,
                      output_tensor_cuda,
                      dice,
-                     self.val_times)
+                     self.test_times)
+        self.test_times += 1
 
         tensorboard_logs = {
             "test_dice": dice,
