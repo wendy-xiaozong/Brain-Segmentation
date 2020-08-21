@@ -13,6 +13,7 @@ import inspect
 import torch.nn.functional as F
 from postprocess.visualize import log_all_info
 from torch import Tensor
+from time import ctime
 from monai.losses import DiceLoss
 # from utils.gpu_mem_track import MemTracker
 import torchio
@@ -201,7 +202,8 @@ class Lightning_Unet(pl.LightningModule):
         training_loader = DataLoader(patches_training_set,
                                      batch_size=self.hparams.batch_size)
 
-        print('Training set:', len(train_imageDataset), 'subjects')
+        # print('Training set:', len(train_imageDataset), 'subjects')
+        print(f"{ctime()}: getting number of training subjects {len(training_loader)}")
         return training_loader
 
     def val_dataloader(self) -> DataLoader:
@@ -220,7 +222,7 @@ class Lightning_Unet(pl.LightningModule):
 
         # the batch_size here only could be 1 because we only could handle one image to aggregate
         val_loader = DataLoader(val_imageDataset, batch_size=1)
-        print('Validation set:', len(val_loader), 'subjects')
+        print(f"{ctime()}: getting number of validation subjects {len(val_loader)}")
         return val_loader
 
     def test_dataloader(self):
@@ -239,7 +241,7 @@ class Lightning_Unet(pl.LightningModule):
 
         # the batch_size here only could be 1 because we only could handle one image to aggregate
         test_loader = DataLoader(test_imageDataset, batch_size=1)
-        print('Validation set:', len(test_loader), 'subjects')
+        print(f"{ctime()}: getting number of validation subjects {len(test_loader)}")
         return test_loader
 
     # need to adding more things
@@ -405,6 +407,9 @@ class Lightning_Unet(pl.LightningModule):
         # using CUDA
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
+        print("validation:")
+        print(f"        img shape: {img.shape}")
+        print(f"        target shape: {target_tensor_cuda.shape}")
         log_all_info(self,
                      img,
                      target_tensor_cuda,
@@ -445,6 +450,9 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
+        print("test:")
+        print(f"        img shape: {img.shape}")
+        print(f"        target shape: {target_tensor_cuda.shape}")
         log_all_info(self,
                      img,
                      target_tensor_cuda,
