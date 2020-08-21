@@ -152,7 +152,7 @@ class Lightning_Unet(pl.LightningModule):
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
             num_subjects = len(self.subjects)
-            num_training_subjects = int(num_subjects * 0.99)  # （5074+359+21） * 0.9 used for training
+            num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
             self.training_subjects = self.subjects[:num_training_subjects]
             self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -168,7 +168,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.97)  # （5074+359+21） * 0.9 used for training
+        num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -222,14 +222,14 @@ class Lightning_Unet(pl.LightningModule):
         print('Validation set:', len(val_loader), 'subjects')
         return val_loader
 
-    def test_dataloader(self):
-        test_transform = get_test_transform()
-        # using all the data to test
-        test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
-        test_loader = DataLoader(test_imageDataset,
-                                 batch_size=1)  # always one because using different label size
-        print('Testing set:', len(test_imageDataset), 'subjects')
-        return test_loader
+    # def test_dataloader(self):
+    #     test_transform = get_test_transform()
+    #     # using all the data to test
+    #     test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
+    #     test_loader = DataLoader(test_imageDataset,
+    #                              batch_size=1)  # always one because using different label size
+    #     print('Testing set:', len(test_imageDataset), 'subjects')
+    #     return test_loader
 
     # need to adding more things
     def configure_optimizers(self):

@@ -2,8 +2,8 @@
 import torch
 from torch import tensor
 from typing import Union
-from .enums import LossReduction
 from monai.networks import one_hot
+from .enums import LossReduction
 import warnings
 
 
@@ -137,5 +137,3 @@ Give it a try!
 #         else:
 #             raise NotImplementedError("nah son") # reserved for other stuff (later)
 #         return result
-
-

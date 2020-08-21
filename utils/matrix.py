@@ -56,7 +56,7 @@ def get_score(pred,
     specificity_denom[specificity_denom == 0] = torch.tensor(FLOAT16_EPSILON).type_as(specificity_denom)
     specificity = tns / specificity_denom
 
-    # print(f"reduction: {reduction}")
+    print(f"reduction: {reduction}")
     reduction = LossReduction(reduction).value
 
     if reduction == LossReduction.MEAN.value:
@@ -90,18 +90,19 @@ def dice_loss(prob, target):
 
 
 if __name__ == "__main__":
-    pred = torch.tensor([[0.85, 0.05, 0.05, 0.05],
-                         [0.05, 0.85, 0.05, 0.05],
-                         [0.05, 0.05, 0.85, 0.05],
-                         [0.05, 0.05, 0.05, 0.85]])
-    target = torch.tensor([0, 1, 3, 2])
-    print(get_score(pred, target, include_background=False))
-
-    target = torch.randint(0, 1, (10, 25, 25))
-    pred = target.clone().detach()
-    pred[2:5, 7:13, 9:15] = 1 - pred[2:5, 7:13, 9:15]
-
-    print(get_score(pred, target, include_background=True))
-    print(get_score(pred, target, include_background=False))
-
-    print(f"iou: {iou(pred, target)}")
+    # pred = torch.tensor([[0.85, 0.05, 0.05, 0.05],
+    #                      [0.05, 0.85, 0.05, 0.05],
+    #                      [0.05, 0.05, 0.85, 0.05],
+    #                      [0.05, 0.05, 0.05, 0.85]])
+    # target = torch.tensor([0, 1, 3, 2])
+    # print(get_score(pred, target, include_background=False))
+    #
+    # target = torch.randint(0, 1, (10, 25, 25))
+    # pred = target.clone().detach()
+    # pred[2:5, 7:13, 9:15] = 1 - pred[2:5, 7:13, 9:15]
+    #
+    # print(get_score(pred, target, include_background=True))
+    # print(get_score(pred, target, include_background=False))
+    #
+    # print(f"iou: {iou(pred, target)}")
+    print(LossReduction(LossReduction.NONE).value)
