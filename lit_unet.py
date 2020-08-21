@@ -19,6 +19,7 @@ import torchio
 import torch
 import random
 from pytorch_lightning.metrics.functional import to_onehot
+from utils.enums import LossReduction
 
 import gc
 import datetime
@@ -106,7 +107,7 @@ class Lightning_Unet(pl.LightningModule):
 
         self.out_classes = 139
         self.deepth = self.hparams.deepth
-        self.kernal_size = self.hparams.kernal_size  # whether this affect the model to learn?
+        self.kernal_size = self.hparams.kernal_size
         self.module_type = 'Unet'
         self.downsampling_type = 'max'
         self.normalization = 'InstanceNorm3d'
@@ -143,7 +144,7 @@ class Lightning_Unet(pl.LightningModule):
 
         if not COMPUTECANADA:
             self.max_queue_length = 10
-            self.patch_size = 24
+            self.patch_size = 48
             self.num_workers = 8
             self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
                 whether_use_cropped_and_resample_img=True
@@ -319,7 +320,7 @@ class Lightning_Unet(pl.LightningModule):
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
 
-        patch_overlap = 0  # is there any constrain?
+        patch_overlap = self.hparams.patch_overlap  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
             preprocessed_img,
             self.patch_size,
@@ -362,7 +363,10 @@ class Lightning_Unet(pl.LightningModule):
         target_tensor_cuda = target_tensor.type_as(input)
         del output_tensor, target_tensor, loss, input, target
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
-                                                        include_background=True)
+                                                        include_background=True, reduction=LossReduction.NONE)
+
+        print(f"dice shape: {dice.shape}")
+
         return {'val_step_loss': loss_cuda,
                 'val_step_dice': dice,
                 'val_step_IoU': iou,
@@ -466,8 +470,8 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--run", type=int, default=1, help="number of running times")
         parser.add_argument("--include_background", action="store_true",
                             help='whether include background to compute the dice loss and score')
-        parser.add_argument("--deepth", type=int, default=4, help="the deepth of the unet")
-        parser.add_argument("--kernal_size", type=int, default=5, help="the kernal size")
+        parser.add_argument("--deepth", type=int, default=1, help="the deepth of the unet")
+        parser.add_argument("--kernal_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
-        parser.add_argument("--patch_overlap", type=int, default=20)
+        parser.add_argument("--patch_overlap", type=int, default=10)
         return parser

@@ -56,7 +56,7 @@ def main(hparams):
     trainer = Trainer(
         gpus=hparams.gpus,
         num_nodes=hparams.nodes,
-        distributed_backend='ddp',
+        # distributed_backend='ddp',
         # the next two can be combined to use, in a straight way
         val_check_interval=0.2,
         # check_val_every_n_epoch=3,

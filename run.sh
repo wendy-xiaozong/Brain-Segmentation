@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --account=def-jlevman
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:v100l:2  # on Cedar
+#SBATCH --gres=gpu:v100l:1  # on Cedar
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=192000M  # memory
 #SBATCH --output=seg138-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=00-12:00      # time (DD-HH:MM)
+#SBATCH --time=00-01:00      # time (DD-HH:MM)
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send emailS
 #SBATCH --mail-type=ALL
 
@@ -44,21 +44,22 @@ cd work
 
 BATCH_SIZE=1
 NODES=1
-GPUS=2
-OUT_CHANNELS_FIRST_LAYER=64
+GPUS=1
+OUT_CHANNELS_FIRST_LAYER=32
 LEARNING_RATE=1e-4
 KERNEL_SIZE=3
 DEEPTH=5
-PATCH_SIZE=96
+PATCH_SIZE=128
 MODEL=unet
 # MODEL=highResNet
-PATCH_OVERLAP=10
-RUN=38
+# only to avoid the border effect.
+PATCH_OVERLAP=4
+RUN=40
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_9/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
@@ -69,11 +70,11 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
-       --kernel_size=$KERNEL_SIZE \
+       --kernal_size=$KERNEL_SIZE \
        --fast_dev_run \
        --patch_size=$PATCH_SIZE \
-       --patch_overlap=$PATCH_OVERLAP
-#       --include_background
+       --patch_overlap=$PATCH_OVERLAP \
+       --include_background
 #       --checkpoint_file="epoch=0-val_dice=0.22192.ckpt"
 
 
