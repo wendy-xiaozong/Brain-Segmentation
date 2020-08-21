@@ -437,13 +437,9 @@ class Lightning_Unet(pl.LightningModule):
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=probs, target=targets)
 
-        diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
-        output_tensor = to_onehot(output_tensor, num_classes=139)
-        loss = diceloss.forward(input=output_tensor, target=target_tensor.unsqueeze(dim=1))  # all in CPU
-        loss_cuda = loss.type_as(input)
         output_tensor_cuda = output_tensor.type_as(input)
         target_tensor_cuda = target_tensor.type_as(input)
-        del output_tensor, target_tensor, loss, input, target
+        del output_tensor, target_tensor, input, target
         # dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
@@ -457,7 +453,6 @@ class Lightning_Unet(pl.LightningModule):
                      self.val_times)
 
         tensorboard_logs = {
-            "test_loss": loss_cuda,  # the outputs is a dict wrapped in a list
             "test_dice": dice,
             "test_IoU": iou,
             "test_sensitivity": sensitivity,
