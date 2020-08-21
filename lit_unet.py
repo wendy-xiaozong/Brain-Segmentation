@@ -446,15 +446,12 @@ class Lightning_Unet(pl.LightningModule):
         del output_tensor, target_tensor, loss, input, target
         # dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
         #                                                 include_background=True, reduction=LossReduction.NONE)
-        dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
+        dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
-        print(f"test img shape: {img.shape}")
-        print(f"test target shape: {target_tensor_cuda.shape}")
-        print(f"test output shape: {output_tensor_cuda.shape}")
 
         log_all_info(self,
-                     img,  # [1, 188, 235, 225]
-                     target_tensor_cuda,  # [1, 188, 235, 225]
+                     img,
+                     target_tensor_cuda,
                      output_tensor_cuda,
                      dice,
                      self.val_times)
