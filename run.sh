@@ -50,8 +50,8 @@ LEARNING_RATE=1e-4
 KERNEL_SIZE=3
 DEEPTH=5
 PATCH_SIZE=128
-MODEL=unet
-# MODEL=highResNet
+# MODEL=unet
+MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
 RUN=40
@@ -70,12 +70,13 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
-       --kernal_size=$KERNEL_SIZE \
+       --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
-       --include_background
-#       --fast_dev_run \
-#       --checkpoint_file="epoch=0-val_dice=0.22192.ckpt"
+       --include_background \
+       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt"
+#        --fast_dev_run
+
 
 
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
