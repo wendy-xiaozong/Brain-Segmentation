@@ -56,7 +56,7 @@ def main(hparams):
     trainer = Trainer(
         gpus=hparams.gpus,
         num_nodes=hparams.nodes,
-        # distributed_backend='ddp',
+        distributed_backend='ddp',
         # the next two can be combined to use, in a straight way
         val_check_interval=0.2,
         # check_val_every_n_epoch=3,
@@ -93,12 +93,12 @@ def main(hparams):
     # print(f"recommend learning_rate: {new_lr}")
     # model.hparams.learning_rate = new_lr
 
-    trainer.fit(model)
+    # trainer.fit(model)
     # (1) load the best checkpoint automatically (lightning tracks this for you)
     # trainer.test()
 
     # (3) test using a specific checkpoint
-    # trainer.test(ckpt_path='/path/to/my_checkpoint.ckpt')
+    trainer.test(ckpt_path=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file))
 
 
 # On Windows all of your multiprocessing-using code must be guarded by if __name__ == "__main__":

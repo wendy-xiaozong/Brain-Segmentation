@@ -171,6 +171,7 @@ class Lightning_Unet(pl.LightningModule):
         num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
+        self.test_subjects = self.subjects[:int(num_subjects * 0.05)]
 
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
@@ -222,14 +223,24 @@ class Lightning_Unet(pl.LightningModule):
         print('Validation set:', len(val_loader), 'subjects')
         return val_loader
 
-    # def test_dataloader(self):
-    #     test_transform = get_test_transform()
-    #     # using all the data to test
-    #     test_imageDataset = torchio.ImagesDataset(self.subjects, transform=test_transform)
-    #     test_loader = DataLoader(test_imageDataset,
-    #                              batch_size=1)  # always one because using different label size
-    #     print('Testing set:', len(test_imageDataset), 'subjects')
-    #     return test_loader
+    def test_dataloader(self):
+        test_imageDataset = torchio.ImagesDataset(self.test_subjects)
+
+        # patches_validation_set = torchio.Queue(
+        #     subjects_dataset=val_imageDataset,
+        #     max_length=self.max_queue_length,
+        #     samples_per_volume=self.samples_per_volume,
+        #     sampler=torchio.sampler.UniformSampler(self.patch_size),
+        #     num_workers=self.num_workers,
+        #     shuffle_subjects=False,
+        #     shuffle_patches=True,
+        #     verbose=True,
+        # )
+
+        # the batch_size here only could be 1 because we only could handle one image to aggregate
+        test_loader = DataLoader(test_imageDataset, batch_size=1)
+        print('Validation set:', len(test_loader), 'subjects')
+        return test_loader
 
     # need to adding more things
     def configure_optimizers(self):
@@ -300,7 +311,7 @@ class Lightning_Unet(pl.LightningModule):
         # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
         # dice = dice_score(pred=batch_preds, target=batch_targets, bg=True)
 
-    def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None):
+    def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None, whether_to_return_img=False):
         if if_path:
             cur_img_subject = torchio.Subject(
                 img=torchio.Image(input, type=torchio.INTENSITY)
@@ -342,7 +353,7 @@ class Lightning_Unet(pl.LightningModule):
             aggregator.add_batch(labels, locations)
         output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
 
-        if if_path:
+        if if_path or whether_to_return_img:
             return preprocessed_img.img.data, output_tensor, preprocessed_label.img.data
         else:
             return output_tensor, preprocessed_label.img.data
@@ -362,10 +373,11 @@ class Lightning_Unet(pl.LightningModule):
         output_tensor_cuda = output_tensor.type_as(input)
         target_tensor_cuda = target_tensor.type_as(input)
         del output_tensor, target_tensor, loss, input, target
+        # dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
+        #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
-                                                        include_background=True, reduction=LossReduction.NONE)
-
-        print(f"dice shape: {dice.shape}")
+                                                        include_background=True)
+        # print(f"dice shape: {dice.shape}")
 
         return {'val_step_loss': loss_cuda,
                 'val_step_dice': dice,
@@ -414,28 +426,40 @@ class Lightning_Unet(pl.LightningModule):
         return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs,
                 'progress_bar': {'val_dice': avg_val_dice}}
 
-    # def test_step(self, batch, batch_idx):
-    #     inputs, targets = self.prepare_batch(batch)
-    #     # print(f"training input range: {torch.min(inputs)} - {torch.max(inputs)}")
-    #     logits = self(inputs)
-    #     logits = F.interpolate(logits, size=logits.size()[2:])
-    #     probs = torch.sigmoid(logits)
-    #     dice, iou, _, _ = get_score(probs, targets)
-    #     # if batch_idx != 0 and batch_idx % 50 == 0:  # save total about 10 picture
-    #     #     input = inputs.chunk(inputs.size()[0], 0)[0]  # split into 1 in the dimension 0
-    #     #     target = targets.chunk(targets.size()[0], 0)[0]  # split into 1 in the dimension 0
-    #     #     logit = probs.chunk(logits.size()[0], 0)[0]  # split into 1 in the dimension 0
-    #     #     # need to add the dice score here
-    #     #     log_all_info(self, input, target, logit, batch_idx, "testing", 0.5)
-    #     # loss = F.binary_cross_entropy_with_logits(logits, targets)
-    #     loss = dice_loss(probs, targets)
-    #     dice, iou, sensitivity, specificity = get_score(probs, targets)
-    #     return {'test_step_loss': loss,
-    #             'test_step_dice': dice,
-    #             'test_step_IoU': iou,
-    #             'test_step_sensitivity': sensitivity,
-    #             'test_step_specificity': specificity
-    #             }
+    def test_step(self, batch, batch_idx):
+        input, target = self.prepare_batch(batch)
+        img, output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False, whether_to_return_img=True)  # in CPU
+
+        # pred = self(inputs)
+        # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
+        # loss = gdloss.forward(input=probs, target=targets)
+
+        diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
+        output_tensor = to_onehot(output_tensor, num_classes=139)
+        loss = diceloss.forward(input=output_tensor, target=target_tensor.unsqueeze(dim=1))  # all in CPU
+        loss_cuda = loss.type_as(input)
+        output_tensor_cuda = output_tensor.type_as(input)
+        target_tensor_cuda = target_tensor.type_as(input)
+        del output_tensor, target_tensor, loss, input, target
+        # dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
+        #                                                 include_background=True, reduction=LossReduction.NONE)
+        dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
+                                                        include_background=True)
+        log_all_info(self,
+                     img,
+                     target_tensor_cuda,
+                     output_tensor_cuda,
+                     dice,
+                     self.val_times)
+
+        tensorboard_logs = {
+            "test_loss": loss_cuda,  # the outputs is a dict wrapped in a list
+            "test_dice": dice,
+            "test_IoU": iou,
+            "test_sensitivity": sensitivity,
+            "test_specificity": specificity,
+        }
+        return {'log': tensorboard_logs}
 
     # def test_epoch_end(self, outputs):
     #     # torch.stack: Concatenates sequence of tensors along a new dimension.
@@ -471,7 +495,7 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--include_background", action="store_true",
                             help='whether include background to compute the dice loss and score')
         parser.add_argument("--deepth", type=int, default=1, help="the deepth of the unet")
-        parser.add_argument("--kernal_size", type=int, default=3, help="the kernal size")
+        parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
         parser.add_argument("--patch_overlap", type=int, default=10)
         return parser
