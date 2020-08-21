@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --account=def-jlevman
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:v100l:1  # on Cedar
+#SBATCH --gres=gpu:v100l:4  # on Cedar
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=192000M  # memory
 #SBATCH --output=seg138-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=00-01:00      # time (DD-HH:MM)
+#SBATCH --time=00-06:00      # time (DD-HH:MM)
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send emailS
 #SBATCH --mail-type=ALL
 
@@ -42,9 +42,9 @@ tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(d
 
 cd work
 
-BATCH_SIZE=1
+BATCH_SIZE=4
 NODES=1
-GPUS=1
+GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
 LEARNING_RATE=1e-4
 KERNEL_SIZE=3
