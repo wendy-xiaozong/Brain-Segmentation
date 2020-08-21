@@ -54,7 +54,7 @@ PATCH_SIZE=128
 MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=40
+RUN=44
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
@@ -69,13 +69,13 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --learning_rate=$LEARNING_RATE \
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
+       --fast_dev_run \
        --deepth=$DEEPTH \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background \
-       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt" \
-       # --fast_dev_run
+       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt"
 
 
 
