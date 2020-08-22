@@ -452,30 +452,20 @@ class Lightning_Unet(pl.LightningModule):
                      dice,
                      self.test_times)
         self.test_times += 1
+        return {'test_step_dice': dice,
+                'test_step_IoU': iou,
+                "test_step_sensitivity": sensitivity,
+                "test_step_specificity": specificity}
 
+    def test_epoch_end(self, outputs):
+        # torch.stack: Concatenates sequence of tensors along a new dimension.
         tensorboard_logs = {
-            "test_dice": dice,
-            "test_IoU": iou,
-            "test_sensitivity": sensitivity,
-            "test_specificity": specificity,
+            "test_dice": outputs[0]['test_step_dice'],
+            "test_IoU": outputs[0]['test_step_IoU'],
+            "test_sensitivity": outputs[0]['test_step_sensitivity'],
+            "test_specificity": outputs[0]['test_step_specificity']
         }
         return {'log': tensorboard_logs}
-
-    # def test_epoch_end(self, outputs):
-    #     # torch.stack: Concatenates sequence of tensors along a new dimension.
-    #     avg_loss = torch.stack([x['test_step_loss'] for x in outputs]).mean()
-    #     avg_dice = torch.stack([x['test_step_dice'] for x in outputs]).mean()
-    #     avg_IoU = torch.stack([x['test_step_IoU'] for x in outputs]).mean()
-    #     avg_sensitivity = torch.stack([x['test_step_sensitivity'] for x in outputs]).mean()
-    #     avg_specificity = torch.stack([x['test_step_specificity'] for x in outputs]).mean()
-    #     tensorboard_logs = {
-    #         "avg_test_loss": avg_loss.item(),  # the outputs is a dict wrapped in a list
-    #         "avg_test_dice": avg_dice.item(),
-    #         "avg_test_IoU": avg_IoU.item(),
-    #         "avg_test_sensitivity": avg_sensitivity.item(),
-    #         "avg_test_specificity": avg_specificity.item(),
-    #     }
-    #     return {'log': tensorboard_logs}
 
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:

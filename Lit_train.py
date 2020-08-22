@@ -71,7 +71,7 @@ def main(hparams):
         fast_dev_run=hparams.fast_dev_run,
         default_root_dir=default_root_dir,
         logger=tb_logger,
-        max_epochs=10000,
+        max_epochs=1,
         # this need to be string
         resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
         profiler=True,
