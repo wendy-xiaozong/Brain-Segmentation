@@ -452,7 +452,7 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
-        if dice.item < 0.5:
+        if dice.item() < 0.5:
             # get path of img and target
             img_path, label_path = batch["img"][PATH], batch["label"][PATH]
             # move the deleted file to the folder
@@ -460,7 +460,6 @@ class Lightning_Unet(pl.LightningModule):
             os.system(f"mv {label_path} {delete_label_folder}")
             # get the filename
             _, filename = os.path.split(img_path)
-            filename, _ = os.path.splitext(filename)
             # need to add the filename into the tensorboard
             log_all_info(self,
                          img,
