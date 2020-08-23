@@ -212,7 +212,7 @@ class BrainSlices:
             if title is not None:
                 plt.gcf().suptitle(title)
 
-    def log(self, fig: Figure, dice_score: float, val_times: int, filename: Optional[str]) -> None:
+    def log(self, fig: Figure, dice_score: float, val_times: int, filename: Optional[str] = None) -> None:
         logger = self.lightning.logger
         if filename is not None:
             summary = f"Run:{self.lightning.hparams.run}-Epoch:{self.lightning.current_epoch + 1}-val_time:{val_times}-dice_score:{dice_score:0.5f}-filename:{filename}"
@@ -333,7 +333,7 @@ class BrainSlices:
                 #     print("Saving... {:2.1f}%".format(100 * current_frame / total_frames))
 
             # writervideo = animation.FFMpegWriter(fps=60)
-            ani.save(outfile, codec="h264", dpi=dpi, progress_callback=prog_logger)
+            ani.save(outfile, codec="h264", dpi=dpi, progress_callback = prog_logger)
             # ani.save(outfile, progress_callback=prog_logger, writer=writervideo)
             pbar.close()
 
@@ -349,7 +349,8 @@ https://pytorch.org/docs/stable/tensorboard.html
 """
 
 
-def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float, val_times: int, filename: Optional[str]) -> None:
+def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float, val_times: int,
+                 filename: Optional[str] = None) -> None:
     """Helper for decluttering training loop. Just performs all logging functions."""
     brainSlice = BrainSlices(module, img, target, preb, colors_path=colors_path)
     fig = brainSlice.plot()

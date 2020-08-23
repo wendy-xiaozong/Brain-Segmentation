@@ -420,7 +420,7 @@ class Lightning_Unet(pl.LightningModule):
                      target_tensor_cuda,
                      output_tensor_cuda,
                      dice,
-                     self.val_times)
+                     self.val_times, filename=None)
         self.val_times += 1
 
         # torch.stack: Concatenates sequence of tensors along a new dimension.
