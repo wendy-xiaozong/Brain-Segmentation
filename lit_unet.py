@@ -1,8 +1,8 @@
 import pytorch_lightning as pl
-from torchio import DATA
+from torchio import DATA, PATH
 from torch.utils.data import DataLoader
 from data.get_subjects import get_processed_subjects
-from data.const import COMPUTECANADA
+from data.const import COMPUTECANADA, delete_img_folder, delete_label_folder
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
 from model.unet.unet import UNet
@@ -19,6 +19,9 @@ from monai.losses import DiceLoss
 import torchio
 import torch
 import random
+import os
+from pathlib import Path
+import pandas as pd
 from pytorch_lightning.metrics.functional import to_onehot
 from utils.enums import LossReduction
 
@@ -171,9 +174,12 @@ class Lightning_Unet(pl.LightningModule):
         num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
-        self.test_subjects = self.subjects[:int(num_subjects * 0.05)]
+        self.test_subjects = self.subjects
         self.val_times = 0
         self.test_times = 0
+        self.df = pd.DataFrame(columns=['filename'])
+        self.delete_img_folder = delete_img_folder
+        self.delete_label_folder = delete_label_folder
 
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
@@ -432,7 +438,8 @@ class Lightning_Unet(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         input, target = self.prepare_batch(batch)
-        img, output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False, whether_to_return_img=True)  # in CPU
+        img, output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False,
+                                                                          whether_to_return_img=True)  # in CPU
 
         # pred = self(inputs)
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
@@ -445,13 +452,26 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
-        log_all_info(self,
-                     img,
-                     target_tensor_cuda,
-                     output_tensor_cuda,
-                     dice,
-                     self.test_times)
-        self.test_times += 1
+        if dice.item < 0.5:
+            # get path of img and target
+            img_path, label_path = batch["img"][PATH], batch["label"][PATH]
+            # move the deleted file to the folder
+            os.system(f"mv {img_path} {delete_img_folder}")
+            os.system(f"mv {label_path} {delete_label_folder}")
+            # get the filename
+            _, filename = os.path.split(img_path)
+            filename, _ = os.path.splitext(filename)
+            # need to add the filename into the tensorboard
+            log_all_info(self,
+                         img,
+                         target_tensor_cuda,
+                         output_tensor_cuda,
+                         dice,
+                         self.test_times,
+                         filename=filename)
+            self.test_times += 1
+            # add the filename into the dataframe.
+            self.df.loc[self.df.shape[0]] = {"filename": filename}
         return {'test_step_dice': dice,
                 'test_step_IoU': iou,
                 "test_step_sensitivity": sensitivity,
@@ -460,11 +480,13 @@ class Lightning_Unet(pl.LightningModule):
     def test_epoch_end(self, outputs):
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         tensorboard_logs = {
-            "test_dice": outputs[0]['test_step_dice'],
-            "test_IoU": outputs[0]['test_step_IoU'],
-            "test_sensitivity": outputs[0]['test_step_sensitivity'],
-            "test_specificity": outputs[0]['test_step_specificity']
+            "test_dice": torch.stack([x['val_step_dice'] for x in outputs]),
+            "test_IoU": torch.stack([x['val_step_IoU'] for x in outputs]),
+            "test_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]),
+            "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs])
         }
+        # save the file
+        self.df.to_csv(Path(__file__).resolve().parent.parent.parent / "deleted_data.csv")
         return {'log': tensorboard_logs}
 
     @staticmethod

@@ -41,6 +41,8 @@ tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(d
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
+mkdir deleted_img
+mkdir deleted_label
 
 BATCH_SIZE=2
 NODES=1
@@ -54,7 +56,7 @@ PATCH_SIZE=128
 MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=44
+RUN=45
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
@@ -69,14 +71,15 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --learning_rate=$LEARNING_RATE \
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
-       --fast_dev_run \
        --deepth=$DEEPTH \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background \
-       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt"
+       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt" && echo "$(date +"%T"):  Finished processing data"
 
-
+echo "$(date +"%T"):  start tar data"
+tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
+tar -cf /home/jueqi/scratch/Data/deleted_ADNI.tar deleted_img/ deleted_label/
 
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py

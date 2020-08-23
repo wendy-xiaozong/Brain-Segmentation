@@ -34,6 +34,8 @@ if COMPUTECANADA:
     processed_label_folder = DATA_ROOT / "label"
     cropped_img_folder = DATA_ROOT / "cropped_img"
     cropped_label_folder = DATA_ROOT / "cropped_label"
+    delete_img_folder = DATA_ROOT / "deleted_img"
+    delete_label_folder = DATA_ROOT / "deleted_label"
 else:
     DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
     processed_folder = DATA_ROOT / "processed_ADNI"

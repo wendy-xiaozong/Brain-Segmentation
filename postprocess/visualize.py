@@ -180,7 +180,7 @@ class BrainSlices:
         fig = plt.figure(figsize=(15, 25))
         # need to change here
         # 160 is a random number
-        gs = gridspec.GridSpec(nrows, ncols, width_ratios=[self.shape[1] / 160, 1, 1])
+        gs = gridspec.GridSpec(nrows, ncols, height_ratios=[self.shape[1] / 160, 1, 1])
 
         for i in range(0, 3):
             ax1 = plt.subplot(gs[i*3])
@@ -212,9 +212,12 @@ class BrainSlices:
             if title is not None:
                 plt.gcf().suptitle(title)
 
-    def log(self, fig: Figure, dice_score: float, val_times: int) -> None:
+    def log(self, fig: Figure, dice_score: float, val_times: int, filename: Optional[str]) -> None:
         logger = self.lightning.logger
-        summary = f"Run:{self.lightning.hparams.run}-Epoch:{self.lightning.current_epoch + 1}-val_time:{val_times}-dice_score:{dice_score:0.5f}"
+        if filename is not None:
+            summary = f"Run:{self.lightning.hparams.run}-Epoch:{self.lightning.current_epoch + 1}-val_time:{val_times}-dice_score:{dice_score:0.5f}-filename:{filename}"
+        else:
+            summary = f"Run:{self.lightning.hparams.run}-Epoch:{self.lightning.current_epoch + 1}-val_time:{val_times}-dice_score:{dice_score:0.5f}"
         logger.experiment.add_figure(summary, fig, close=True)
         # if you want to manually intervene, look at the code at
         # https://github.com/pytorch/pytorch/blob/master/torch/utils/tensorboard/_utils.py
@@ -346,12 +349,12 @@ https://pytorch.org/docs/stable/tensorboard.html
 """
 
 
-def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float, val_times: int) -> None:
+def log_all_info(module: LightningModule, img: Tensor, target: Tensor, preb: Tensor, dice_score: float, val_times: int, filename: Optional[str]) -> None:
     """Helper for decluttering training loop. Just performs all logging functions."""
     brainSlice = BrainSlices(module, img, target, preb, colors_path=colors_path)
     fig = brainSlice.plot()
 
-    brainSlice.log(fig, dice_score, val_times)
+    brainSlice.log(fig, dice_score, val_times, filename)
 
     # mp4_path = Path(__file__).resolve().parent.parent / "mp4"
     # if not os.path.exists(mp4_path):

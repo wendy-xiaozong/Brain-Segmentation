@@ -18,9 +18,9 @@
 - [X] make the training like the HighResNet
 - [X] using He initialization, and only using two GPU (The default one in pytorch is kaiming's initialization)
 - [X] write the whole picture part in every validation step
+- [X] change the learning rate to more larger
 - [ ] read other people's patch size (?), and training time, and learning rate
 - [ ] check the learning rate 
-- [ ] change the learning rate to more larger
 - [ ] check what I did in the padding part
 - [ ] Try dropout
 - [ ] the filter in each layer might need to change
@@ -50,7 +50,7 @@ Making All Classes Equal in Weakly-supervised Video Semantic Segmentation (Wheth
 
 
 # visualization part
-- [X] find out why _Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers)_. (if still cannot fix, we can go along with the gray image)
+- [X] find out why Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers)_. (if still cannot fix, we can go along with the gray image)
 - [X] find out the reason why the second row of visualization do not working
 - [X] make the data plot according to the original scale
 - [X] why the color part isn't right????
