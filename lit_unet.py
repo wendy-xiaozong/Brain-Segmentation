@@ -174,7 +174,7 @@ class Lightning_Unet(pl.LightningModule):
         num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
-        self.test_subjects = self.subjects
+        self.test_subjects = self.subjects[:80]
         self.val_times = 0
         self.test_times = 0
         self.df = pd.DataFrame(columns=['filename'])
