@@ -174,7 +174,7 @@ class Lightning_Unet(pl.LightningModule):
         num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
-        self.test_subjects = self.subjects[:80]
+        self.test_subjects = self.subjects
         self.val_times = 0
         self.test_times = 0
         self.df = pd.DataFrame(columns=['filename'])
@@ -486,7 +486,7 @@ class Lightning_Unet(pl.LightningModule):
             "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs])
         }
         # save the file
-        self.df.to_csv(Path(__file__).resolve().parent.parent.parent / "deleted_data.csv")
+        self.df.to_csv(Path(__file__).resolve().parent.parent.parent / f"run:{self.hparams.run}-deleted_data.csv")
         return {'log': tensorboard_logs}
 
     @staticmethod

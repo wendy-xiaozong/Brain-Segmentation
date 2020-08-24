@@ -52,11 +52,11 @@ LEARNING_RATE=1e-4
 KERNEL_SIZE=5
 DEEPTH=4
 PATCH_SIZE=96
-MODEL=unet
-# MODEL=highResNet
+# MODEL=unet
+MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=49
+RUN=50
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
