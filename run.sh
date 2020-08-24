@@ -44,19 +44,19 @@ cd work
 mkdir deleted_img
 mkdir deleted_label
 
-BATCH_SIZE=2
+BATCH_SIZE=4
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
 LEARNING_RATE=1e-4
-KERNEL_SIZE=3
-DEEPTH=5
-PATCH_SIZE=128
-# MODEL=unet
-MODEL=highResNet
+KERNEL_SIZE=5
+DEEPTH=4
+PATCH_SIZE=96
+MODEL=unet
+# MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=45
+RUN=49
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
@@ -76,7 +76,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background \
-       --checkpoint_file="epoch=3-val_dice=0.65432.ckpt" && echo "$(date +"%T"):  Finished processing data"
+       --checkpoint_file="epoch=8-val_dice=0.49751.ckpt" && echo "$(date +"%T"):  Finished processing data"
 
 echo "$(date +"%T"):  start tar data"
 tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
