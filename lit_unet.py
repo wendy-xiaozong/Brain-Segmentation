@@ -454,7 +454,7 @@ class Lightning_Unet(pl.LightningModule):
                                                         include_background=True)
         if dice.item() < 0.5:
             # get path of img and target
-            img_path, label_path = batch["img"][PATH], batch["label"][PATH]
+            img_path, label_path = batch["img"][PATH][0], batch["label"][PATH][0]
             # move the deleted file to the folder
             os.system(f"mv {img_path} {delete_img_folder}")
             os.system(f"mv {label_path} {delete_label_folder}")
@@ -471,6 +471,7 @@ class Lightning_Unet(pl.LightningModule):
             self.test_times += 1
             # add the filename into the dataframe.
             self.df.loc[self.df.shape[0]] = {"filename": filename}
+
         return {'test_step_dice': dice,
                 'test_step_IoU': iou,
                 "test_step_sensitivity": sensitivity,
