@@ -150,7 +150,7 @@ class Lightning_Unet(pl.LightningModule):
             self.patch_size = 48
             self.num_workers = 8
             self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
-                whether_use_cropped_and_resample_img=True
+                whether_use_cropped_img=True
             )
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
@@ -166,7 +166,7 @@ class Lightning_Unet(pl.LightningModule):
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
         self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
-            whether_use_cropped_and_resample_img=True
+            whether_use_cropped_img=self.hparams.whether_use_cropped_img
         )
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
@@ -506,6 +506,8 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--run", type=int, default=1, help="number of running times")
         parser.add_argument("--include_background", action="store_true",
                             help='whether include background to compute the dice loss and score')
+        parser.add_argument("--whether_use_cropped_img", action="store_true",
+                            help='whether use the cropped image')
         parser.add_argument("--deepth", type=int, default=1, help="the deepth of the unet")
         parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")

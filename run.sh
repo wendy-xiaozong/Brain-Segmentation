@@ -52,8 +52,8 @@ LEARNING_RATE=1e-4
 KERNEL_SIZE=5
 DEEPTH=4
 PATCH_SIZE=96
-# MODEL=unet
-MODEL=highResNet
+MODEL=unet
+# MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
 RUN=50
@@ -75,8 +75,9 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
-       --include_background \
-       --checkpoint_file="epoch=8-val_dice=0.49751.ckpt" && echo "$(date +"%T"):  Finished processing data"
+       --include_background && echo "$(date +"%T"):  Finished processing data"
+#        --whether_use_cropped_img \
+#        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt"
 
 #echo "$(date +"%T"):  start tar data"
 #tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
