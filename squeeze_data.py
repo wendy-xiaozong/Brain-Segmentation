@@ -34,7 +34,7 @@ from data.get_path import get_path
 
 def read_data(mri):
     img, label = nib.load(mri.img_path), nib.load(mri.label_path)
-    data_np = img.get_data().astype(np.uint8)
+    data_np = img.get_data()
     seg_np = label.get_data().squeeze().astype(np.float)
     return data_np, seg_np, img.affine, label.affine
 
@@ -46,20 +46,20 @@ if __name__ == "__main__":
         # cropped_img_folder = DATA_ROOT / "work" / "img"
         # cropped_label_folder = DATA_ROOT / "work" / "label"
         # DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
-        processed_folder = DATA_ROOT / "processed_ADNI"
-        processed_img_folder = processed_folder / "img"
-        processed_label_folder = processed_folder / "label"
+        squeezed_folder = DATA_ROOT / "squeezed_ADNI"
+        squeezed_img_folder = squeezed_folder / "img"
+        squeezed_label_folder = squeezed_folder / "label"
     else:
-        processed_folder = DATA_ROOT / "processed_ADNI"
-        processed_img_folder = processed_folder / "img"
-        processed_label_folder = processed_folder / "label"
+        squeezed_folder = DATA_ROOT / "squeezed_ADNI"
+        squeezed_img_folder = squeezed_folder / "img"
+        squeezed_label_folder = squeezed_folder / "label"
 
-    if not os.path.exists(processed_folder):
-        os.mkdir(processed_folder)
-    if not os.path.exists(processed_img_folder):
-        os.mkdir(processed_img_folder)
-    if not os.path.exists(processed_label_folder):
-        os.mkdir(processed_label_folder)
+    if not os.path.exists(squeezed_folder):
+        os.mkdir(squeezed_folder)
+    if not os.path.exists(squeezed_img_folder):
+        os.mkdir(squeezed_img_folder)
+    if not os.path.exists(squeezed_label_folder):
+        os.mkdir(squeezed_label_folder)
 
     for mri in tqdm(get_path(ADNI_DATASET_DIR_1)):
         try:
@@ -77,9 +77,9 @@ if __name__ == "__main__":
         filename, _ = os.path.splitext(filename)
 
         img_file = nib.Nifti1Image(data_np, img_affine)
-        nib.save(img_file, processed_img_folder / Path(f"{filename}.nii.gz"))
+        nib.save(img_file, squeezed_img_folder / Path(f"{filename}.nii"))
         label_file = nib.Nifti1Image(seg_np, label_affine)
-        nib.save(label_file, processed_label_folder / Path(f"{filename}.nii.gz"))
+        nib.save(label_file, squeezed_label_folder / Path(f"{filename}.nii.gz"))
 
         # print(f"{ctime()}: Successfully save file {filename} file!")
 

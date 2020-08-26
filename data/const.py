@@ -30,8 +30,8 @@ if TMP or ACT:  # running inside Compute Canada
 if COMPUTECANADA:
     DATA_ROOT = Path(str(TMP)).resolve() / "work"
     # DATA_ROOT = Path("/project/6005889/U-Net_MRI-Data")
-    processed_img_folder = DATA_ROOT / "img"
-    processed_label_folder = DATA_ROOT / "label"
+    squeezed_img_folder = DATA_ROOT / "img"
+    squeezed_label_folder = DATA_ROOT / "label"
     cropped_img_folder = DATA_ROOT / "cropped_img"
     cropped_label_folder = DATA_ROOT / "cropped_label"
     delete_img_folder = DATA_ROOT / "deleted_img"

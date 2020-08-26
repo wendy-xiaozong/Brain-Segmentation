@@ -11,7 +11,7 @@ from glob import glob
 import pandas as pd
 
 
-def get_subjects():
+def get_original_subjects():
     """
     get data from the path and do augmentation on it, and return a DataLoader
     :return: list of subjects
@@ -60,14 +60,24 @@ def get_subjects():
     return subjects, visual_img_path_list, visual_label_path_list
 
 
-def get_cropped_subjects():
-    # using in the cropping folder
-    img_path_list = sorted([
-        Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
-    ])
-    label_path_list = sorted([
-        Path(f) for f in sorted(glob(f"{str(cropped_label_folder)}/**/*.nii.gz", recursive=True))
-    ])
+def get_cropped_subjects(
+        use_cropped_data: True
+):
+    if use_cropped_data:
+        # using in the cropping folder
+        img_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
+        ])
+        label_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(cropped_label_folder)}/**/*.nii.gz", recursive=True))
+        ])
+    else:
+        img_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(squeezed_img_folder)}/**/*.nii*", recursive=True))
+        ])
+        label_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(squeezed_label_folder)}/**/*.nii.gz", recursive=True))
+        ])
 
     subjects = [
         tio.Subject(
