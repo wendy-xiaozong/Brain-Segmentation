@@ -19,6 +19,7 @@
 - [X] using He initialization, and only using two GPU (The default one in pytorch is kaiming's initialization)
 - [X] write the whole picture part in every validation step
 - [X] change the learning rate to more larger
+- [X] MyUnet cannot use to pick images
 - [ ] read other people's patch size (?), and training time, and learning rate
 - [ ] check the learning rate 
 - [ ] check what I did in the padding part

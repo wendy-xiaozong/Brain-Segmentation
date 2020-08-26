@@ -32,7 +32,13 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from data.get_path import get_path
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from data.const import COMPUTECANADA, DATA_ROOT, ADNI_DATASET_DIR_1, CC359_DATASET_DIR, NFBS_DATASET_DIR
+from data.const import (COMPUTECANADA,
+                        DATA_ROOT,
+                        ADNI_DATASET_DIR_1,
+                        CC359_DATASET_DIR,
+                        NFBS_DATASET_DIR,
+                        cropped_img_folder,
+                        cropped_label_folder)
 
 
 # have similar outcome to the kmeans, but kmeans have dramtically better result on some images
@@ -106,15 +112,8 @@ def crop_to_nonzero(data, seg):
 
 
 def crop_from_file(img_path, label_path):
-    img, label = nib.load(img_path), nib.load(label_path)
-
-    data_np = img.get_data()
-    # print("before:")
-    # print(data_np)
-    data_np = data_np.astype(np.uint8)
-    # print("after:")
-    # print(data_np)
-    seg_npy = label.get_data().squeeze().astype(np.float)
+    img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
+    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
     return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
 
@@ -154,28 +153,14 @@ def run_crop(img_path, label_path, img_folder, label_folder):
         return
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
-    cropped_img_file = nib.Nifti1Image(img, img_affine, img_header)
+    cropped_img_file = nib.Nifti1Image(img, img_affine)
     nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
-    cropped_label_file = nib.Nifti1Image(cropped_label, label_affine, label_header)
+    cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
     nib.save(cropped_label_file, label_folder / Path(f"{filename}.nii.gz"))
     print(f"{ctime()}: Successfully save file {filename} file!")
 
 
 if __name__ == "__main__":
-    if COMPUTECANADA:
-        # DATA_ROOT = Path(str(os.environ.get("SLURM_TMPDIR"))).resolve()
-        # DATA_ROOT = Path("/project/6005889/U-Net_MRI-Data")
-        # cropped_img_folder = DATA_ROOT / "work" / "img"
-        # cropped_label_folder = DATA_ROOT / "work" / "label"
-        cropped_img_folder = DATA_ROOT / "img"
-        cropped_label_folder = DATA_ROOT / "label"
-    else:
-        DATA_ROOT = Path(__file__).resolve().parent.parent / "Data"
-        img_path = DATA_ROOT / "all_different_size_img/img"
-        label_path = DATA_ROOT / "all_different_size_img/label"
-        cropped_img_folder = DATA_ROOT / "cropped" / "img"
-        cropped_label_folder = DATA_ROOT / "cropped" / "label"
-
     if not os.path.exists(DATA_ROOT / "cropped"):
         os.mkdir(DATA_ROOT / "cropped")
     if not os.path.exists(cropped_img_folder):
@@ -194,28 +179,24 @@ if __name__ == "__main__":
     # pool.map(_run_crop, arg_list[:16])
 
     if COMPUTECANADA:
-        datasets = [CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1]
+        # datasets = [CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1]
+        datasets = [ADNI_DATASET_DIR_1]
     else:
-        datasets = [CC359_DATASET_DIR]
-
-    # for idx, mri in enumerate(get_path(datasets)):
-        # if not COMPUTECANADA:
-        # run_crop(idx, mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+        datasets = [ADNI_DATASET_DIR_1]
 
     idx = 0
     # for img_path, label_path in zip(img_path_list, label_path_list):
     #     idx += 1
     #     run_crop(img_path, label_path, cropped_img_folder, cropped_label_folder)
 
-    # for mri in get_path(datasets):
-    #     idx += 1
-    #     run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+    for mri in get_path(datasets):
+        idx += 1
+        run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
 
-    run_crop(
-        "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",
-             "/home/jq/PycharmProjects/Unet_seg138/Data/label/MALPEM"
-             "-ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii.gz",
-        cropped_img_folder, cropped_label_folder)
+    # run_crop(
+    #     "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",
+    #     "/Data/label/MALPEM-ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii.gz",
+    #     cropped_img_folder, cropped_label_folder)
 
     print(f"{ctime()}: ending ...")
     print(f"Totally get {idx} imgs!")

@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=32  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=192000M  # memory
 #SBATCH --output=seg138-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=00-06:00      # time (DD-HH:MM)
+#SBATCH --time=00-12:00      # time (DD-HH:MM)
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send emailS
 #SBATCH --mail-type=ALL
 
@@ -78,8 +78,8 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --include_background \
        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt" && echo "$(date +"%T"):  Finished processing data"
 
-echo "$(date +"%T"):  start tar data"
-tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
-tar -cf /home/jueqi/scratch/Data/deleted_ADNI.tar deleted_img/ deleted_label/
+#echo "$(date +"%T"):  start tar data"
+#tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
+#tar -cf /home/jueqi/scratch/Data/deleted_ADNI.tar deleted_img/ deleted_label/ && echo "$(date +"%T"):  finishing taring data!"
 
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
