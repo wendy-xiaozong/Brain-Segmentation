@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torchio import DATA, PATH
 from torch.utils.data import DataLoader
-from data.get_subjects import get_cropped_subjects, get_subjects
+from data.get_subjects import get_subjects
 from data.const import COMPUTECANADA, delete_img_folder, delete_label_folder
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
@@ -149,8 +149,8 @@ class Lightning_Unet(pl.LightningModule):
             self.max_queue_length = 10
             self.patch_size = 48
             self.num_workers = 8
-            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
-                whether_use_cropped_img=True
+            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(
+                use_cropped_data=True
             )
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
@@ -165,11 +165,7 @@ class Lightning_Unet(pl.LightningModule):
     # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
-        if self.hparams.use_cropped_img:
-            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_cropped_subjects()
-        else:
-            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects()
-
+        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(use_cropped_data=self.hparams.use_cropped_img)
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)

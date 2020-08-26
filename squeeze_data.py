@@ -14,7 +14,6 @@ import os
 
 from data.const import ADNI_DATASET_DIR_1, ADNI_LABEL, COMPUTECANADA, DATA_ROOT
 from data.transform import get_train_transforms
-from data.get_subjects import get_subjects
 from data.get_path import get_path
 
 # def _prepare_data(batch):

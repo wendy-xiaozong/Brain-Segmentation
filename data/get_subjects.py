@@ -60,7 +60,7 @@ def get_original_subjects():
     return subjects, visual_img_path_list, visual_label_path_list
 
 
-def get_cropped_subjects(
+def get_subjects(
         use_cropped_data: True
 ):
     if use_cropped_data:
