@@ -25,7 +25,7 @@ from collections import OrderedDict
 from pathlib import Path
 from glob import glob
 import pickle
-import tqdm
+from tqdm import tqdm
 import nibabel as nib
 from time import ctime
 import matplotlib.pyplot as plt
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     #     idx += 1
     #     run_crop(img_path, label_path, cropped_img_folder, cropped_label_folder)
 
-    for mri in get_path(datasets):
+    for mri in tqdm(get_path(datasets)):
         idx += 1
         run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
 
