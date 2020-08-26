@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from torchio import DATA, PATH
 from torch.utils.data import DataLoader
-from data.get_subjects import get_processed_subjects
+from data.get_subjects import get_cropped_subjects, get_subjects
 from data.const import COMPUTECANADA, delete_img_folder, delete_label_folder
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
@@ -165,9 +165,11 @@ class Lightning_Unet(pl.LightningModule):
     # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
-        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_processed_subjects(
-            whether_use_cropped_img=self.hparams.whether_use_cropped_img
-        )
+        if self.hparams.use_cropped_img:
+            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_cropped_subjects()
+        else:
+            self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects()
+
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
@@ -506,7 +508,7 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--run", type=int, default=1, help="number of running times")
         parser.add_argument("--include_background", action="store_true",
                             help='whether include background to compute the dice loss and score')
-        parser.add_argument("--whether_use_cropped_img", action="store_true",
+        parser.add_argument("--use_cropped_img", action="store_true",
                             help='whether use the cropped image')
         parser.add_argument("--deepth", type=int, default=1, help="the deepth of the unet")
         parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")

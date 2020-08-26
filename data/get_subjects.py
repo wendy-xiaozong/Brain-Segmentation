@@ -60,32 +60,22 @@ def get_subjects():
     return subjects, visual_img_path_list, visual_label_path_list
 
 
-def get_processed_subjects(
-        whether_use_cropped_img: bool = True
-):
+def get_cropped_subjects():
     # using in the cropping folder
-    if whether_use_cropped_img:
-        img_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
-        ])
-        label_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(cropped_label_folder)}/**/*.nii.gz", recursive=True))
-        ])
-    else:
-        img_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(processed_img_folder)}/**/*.nii*", recursive=True))
-        ])
-        label_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(processed_label_folder)}/**/*.nii.gz", recursive=True))
-        ])
+    img_path_list = sorted([
+        Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
+    ])
+    label_path_list = sorted([
+        Path(f) for f in sorted(glob(f"{str(cropped_label_folder)}/**/*.nii.gz", recursive=True))
+    ])
 
     subjects = [
         tio.Subject(
-                img=tio.Image(path=img_path, type=tio.INTENSITY),
-                label=tio.Image(path=label_path, type=tio.LABEL),
-                # store the dataset name to help plot the image later
-                # dataset=mri.dataset
-            ) for img_path, label_path in zip(img_path_list, label_path_list)
+            img=tio.Image(path=img_path, type=tio.INTENSITY),
+            label=tio.Image(path=label_path, type=tio.LABEL),
+            # store the dataset name to help plot the image later
+            # dataset=mri.dataset
+        ) for img_path, label_path in zip(img_path_list, label_path_list)
     ]
 
     fine_tune_set_file = Path(__file__).resolve().parent.parent.parent / "ADNI_MALPEM_baseline_1069.csv"
@@ -97,11 +87,11 @@ def get_processed_subjects(
     visual_img_path_list = []
     visual_label_path_list = []
 
+    # used for visualization
     for img_path in img_path_list:
         img_name = img_path.name
         if img_name in images_baseline_set:
             visual_img_path_list.append(img_path)
-
     for label_path in label_path_list:
         label_name = label_path.name
         if label_name in images_baseline_set:
