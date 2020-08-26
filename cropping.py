@@ -113,7 +113,15 @@ def crop_to_nonzero(data, seg):
 
 def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
-    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
+    data_np, seg_npy = img.get_data().astype(np.float), label.get_data().squeeze().astype(np.float)
+
+    if np.isnan(data_np).any():
+        print("there is nan in original image!")
+        data_np[data_np != data_np] = 0.0
+    if np.isnan(seg_npy).any():
+        print("there is nan in targets data!")
+        seg_npy[seg_npy != seg_npy] = 0.0
+
     return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
 
@@ -189,7 +197,9 @@ if __name__ == "__main__":
     #     idx += 1
     #     run_crop(img_path, label_path, cropped_img_folder, cropped_label_folder)
 
-    for mri in tqdm(get_path(datasets)):
+    mri_list = [mri for mri in get_path(datasets)]
+
+    for mri in tqdm(mri_list):
         idx += 1
         run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
 
