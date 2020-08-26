@@ -108,9 +108,14 @@ def crop_to_nonzero(data, seg):
 def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path), nib.load(label_path)
 
-    data_np = img.get_data().astype(np.uint8)
+    data_np = img.get_data()
+    # print("before:")
+    # print(data_np)
+    data_np = data_np.astype(np.uint8)
+    # print("after:")
+    # print(data_np)
     seg_npy = label.get_data().squeeze().astype(np.float)
-    return data_np, seg_npy, img.affine, label.affine
+    return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
 
 def show_save_img_and_label(img_2D, label_2D, bbox_percentile_80, bbox_kmeans, path, idx):
@@ -143,16 +148,15 @@ def run_crop(img_path, label_path, img_folder, label_folder):
 
     print(f"{ctime()}: Start processing {filename} ...")
     try:
-        img, label, img_affine, label_affine = crop_from_file(img_path, label_path)
+        img, label, img_affine, label_affine, img_header, label_header = crop_from_file(img_path, label_path)
     except OSError:
         print("OSError! skip file!")
         return
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
-    cropped_img_file = nib.Nifti1Image(cropped_img, img_affine)
-    # if not use
+    cropped_img_file = nib.Nifti1Image(img, img_affine, img_header)
     nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
-    cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
+    cropped_label_file = nib.Nifti1Image(cropped_label, label_affine, label_header)
     nib.save(cropped_label_file, label_folder / Path(f"{filename}.nii.gz"))
     print(f"{ctime()}: Successfully save file {filename} file!")
 
@@ -172,6 +176,8 @@ if __name__ == "__main__":
         cropped_img_folder = DATA_ROOT / "cropped" / "img"
         cropped_label_folder = DATA_ROOT / "cropped" / "label"
 
+    if not os.path.exists(DATA_ROOT / "cropped"):
+        os.mkdir(DATA_ROOT / "cropped")
     if not os.path.exists(cropped_img_folder):
         os.mkdir(cropped_img_folder)
     if not os.path.exists(cropped_label_folder):
@@ -201,9 +207,15 @@ if __name__ == "__main__":
     #     idx += 1
     #     run_crop(img_path, label_path, cropped_img_folder, cropped_label_folder)
 
-    for mri in get_path(datasets):
-        idx += 1
-        run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+    # for mri in get_path(datasets):
+    #     idx += 1
+    #     run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+
+    run_crop(
+        "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",
+             "/home/jq/PycharmProjects/Unet_seg138/Data/label/MALPEM"
+             "-ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii.gz",
+        cropped_img_folder, cropped_label_folder)
 
     print(f"{ctime()}: ending ...")
     print(f"Totally get {idx} imgs!")
