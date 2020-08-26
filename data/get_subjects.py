@@ -6,7 +6,7 @@ from .const import *
 import torchio as tio
 from time import ctime
 from .get_path import get_path, get_1069_path
-from .const import processed_label_folder, processed_img_folder, cropped_img_folder, cropped_label_folder, DATA_ROOT
+from .const import cropped_img_folder, cropped_label_folder, DATA_ROOT
 from glob import glob
 import pandas as pd
 
