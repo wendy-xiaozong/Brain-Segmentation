@@ -61,10 +61,10 @@ def get_subjects():
 
 
 def get_processed_subjects(
-        whether_use_cropped_and_resample_img: bool = True
+        whether_use_cropped_img: bool = True
 ):
     # using in the cropping folder
-    if whether_use_cropped_and_resample_img:
+    if whether_use_cropped_img:
         img_path_list = sorted([
             Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
         ])

@@ -427,11 +427,11 @@ class Lightning_Unet(pl.LightningModule):
         avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
         avg_val_dice = torch.stack([x['val_step_dice'] for x in outputs]).mean()
         tensorboard_logs = {
-            "val_loss": outputs[0]['val_step_loss'],  # to compare with train
-            "val_dice": outputs[0]['val_step_dice'],
-            "val_IoU": outputs[0]['val_step_IoU'],
-            "val_sensitivity": outputs[0]['val_step_sensitivity'],
-            "val_specificity": outputs[0]['val_step_specificity']
+            "val_loss": avg_loss,
+            "val_dice": avg_val_dice,
+            "val_IoU": torch.stack([x['val_step_IoU'] for x in outputs]).mean(),
+            "val_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]).mean(),
+            "val_specificity": torch.stack([x['val_step_specificity'] for x in outputs]).mean(),
         }
         return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs,
                 'progress_bar': {'val_dice': avg_val_dice}}
