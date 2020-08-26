@@ -12,7 +12,6 @@
 #SBATCH --mail-type=ALL
 
 module load python/3.6 cuda cudnn gcc/8.3.0
-
 SOURCEDIR=/home/jueqi/scratch
 
 # Prepare virtualenv
@@ -74,7 +73,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
-#        --whether_use_cropped_img \
+#        --use_cropped_img \
 #        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt"
 
 #echo "$(date +"%T"):  start tar data"
