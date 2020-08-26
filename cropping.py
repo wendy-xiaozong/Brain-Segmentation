@@ -150,7 +150,8 @@ def run_crop(img_path, label_path, img_folder, label_folder):
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
     cropped_img_file = nib.Nifti1Image(cropped_img, img_affine)
-    nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii.gz"))
+    # if not use
+    nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
     cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
     nib.save(cropped_label_file, label_folder / Path(f"{filename}.nii.gz"))
     print(f"{ctime()}: Successfully save file {filename} file!")
