@@ -16,8 +16,8 @@ def main(hparams):
     """
     model = Lightning_Unet(hparams)
     if COMPUTECANADA:
-        cur_path = Path(__file__).resolve().parent.parent
-        default_root_dir = cur_path / "log"
+        cur_path = Path(__file__).resolve().parent
+        default_root_dir = cur_path
         checkpoint_file = Path(__file__).resolve().parent / "checkpoint/{epoch}-{val_dice:.5f}"
         if not os.path.exists(Path(__file__).resolve().parent / "checkpoint"):
             os.mkdir(Path(__file__).resolve().parent / "checkpoint")
@@ -27,9 +27,6 @@ def main(hparams):
         if not os.path.exists(checkpoint_file):
             os.mkdir(checkpoint_file)
         checkpoint_file = Path(checkpoint_file) / "{epoch}-{val_dice:.2f}"
-
-    if not os.path.exists(default_root_dir):
-        os.mkdir(default_root_dir)
 
     # After training finishes, use best_model_path to retrieve the path to the best
     # checkpoint file and best_model_score to retrieve its score.

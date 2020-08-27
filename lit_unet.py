@@ -384,8 +384,6 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
-        # print(f"dice shape: {dice.shape}")
-
         return {'val_step_loss': loss_cuda,
                 'val_step_dice': dice,
                 'val_step_IoU': iou,
@@ -450,41 +448,43 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
                                                         include_background=True)
-        if dice.item() < 0.5:
-            # get path of img and target
-            img_path, label_path = batch["img"][PATH][0], batch["label"][PATH][0]
-            # move the deleted file to the folder
-            os.system(f"mv {img_path} {delete_img_folder}")
-            os.system(f"mv {label_path} {delete_label_folder}")
-            # get the filename
-            _, filename = os.path.split(img_path)
-            # need to add the filename into the tensorboard
-            log_all_info(self,
-                         img,
-                         target_tensor_cuda,
-                         output_tensor_cuda,
-                         dice,
-                         self.test_times,
-                         filename=filename)
-            self.test_times += 1
-            # add the filename into the dataframe.
-            self.df.loc[self.df.shape[0]] = {"filename": filename}
+        # if dice.item() < 0.5:
+        #     # get path of img and target
+        #     img_path, label_path = batch["img"][PATH][0], batch["label"][PATH][0]
+        #     # move the deleted file to the folder
+        #     os.system(f"mv {img_path} {delete_img_folder}")
+        #     os.system(f"mv {label_path} {delete_label_folder}")
+        #     # get the filename
+        #     _, filename = os.path.split(img_path)
+        #     # need to add the filename into the tensorboard
+        #     log_all_info(self,
+        #                  img,
+        #                  target_tensor_cuda,
+        #                  output_tensor_cuda,
+        #                  dice,
+        #                  self.test_times,
+        #                  filename=filename)
+        #     self.test_times += 1
+        #     # add the filename into the dataframe.
+        #     self.df.loc[self.df.shape[0]] = {"filename": filename}
 
-        return {'test_step_dice': dice,
-                'test_step_IoU': iou,
-                "test_step_sensitivity": sensitivity,
-                "test_step_specificity": specificity}
+        result = pl.EvalResult()
+        result.log('test_step_dice', dice, sync_dist=True)
+        result.log('test_step_IoU', iou, sync_dist=True)
+        result.log('test_step_sensitivity', sensitivity, sync_dist=True)
+        result.log('test_step_specificity', specificity, sync_dist=True)
+        return {}
 
     def test_epoch_end(self, outputs):
         # torch.stack: Concatenates sequence of tensors along a new dimension.
         tensorboard_logs = {
-            "test_dice": torch.stack([x['val_step_dice'] for x in outputs]),
-            "test_IoU": torch.stack([x['val_step_IoU'] for x in outputs]),
-            "test_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]),
-            "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs])
+            "test_dice": torch.stack([x['val_step_dice'] for x in outputs]).mean(),
+            "test_IoU": torch.stack([x['val_step_IoU'] for x in outputs]).mean(),
+            "test_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]).mean(),
+            "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs]).mean()
         }
         # save the file
-        self.df.to_csv(Path(__file__).resolve().parent.parent.parent / f"run:{self.hparams.run}-deleted_data.csv")
+        # self.df.to_csv(Path(__file__).resolve().parent.parent.parent / f"run:{self.hparams.run}-deleted_data.csv")
         return {'log': tensorboard_logs}
 
     @staticmethod
