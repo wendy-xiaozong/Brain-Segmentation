@@ -41,6 +41,9 @@ from data.const import (COMPUTECANADA,
                         cropped_label_folder)
 
 
+nan_img_number = 0
+inf_img_number = 0
+
 # have similar outcome to the kmeans, but kmeans have dramtically better result on some images
 def create_nonzero_mask_percentile_80(data):
     from scipy.ndimage import binary_fill_holes
@@ -113,14 +116,24 @@ def crop_to_nonzero(data, seg):
 
 def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
-    data_np, seg_npy = img.get_data().astype(np.float), label.get_data().squeeze().astype(np.float)
+    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
 
+    global nan_img_number, inf_img_number
+
+    # not nan, infinity or a value too large for dtype('float64').
     if np.isnan(data_np).any():
+        nan_img_number += 1
         print("there is nan in original image!")
-        data_np[data_np != data_np] = 0.0
-    if np.isnan(seg_npy).any():
-        print("there is nan in targets data!")
-        seg_npy[seg_npy != seg_npy] = 0.0
+        data_np[np.isnan(data_np)] = 0.0
+
+    if not np.isfinite(data_np).all():
+        inf_img_number += 1
+        print("there is infinite number in the image")
+        # find the max and min
+        max = np.nanmax(data_np[data_np != np.inf])
+        min = np.nanmin(data_np[data_np != -np.inf])
+        data_np[data_np == np.inf] = max
+        data_np[data_np == -np.inf] = min
 
     return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
@@ -169,8 +182,6 @@ def run_crop(img_path, label_path, img_folder, label_folder):
 
 
 if __name__ == "__main__":
-    if not os.path.exists(DATA_ROOT / "cropped"):
-        os.mkdir(DATA_ROOT / "cropped")
     if not os.path.exists(cropped_img_folder):
         os.mkdir(cropped_img_folder)
     if not os.path.exists(cropped_label_folder):
@@ -184,7 +195,6 @@ if __name__ == "__main__":
     # ])
 
     print(f"{ctime()}: starting ...")
-    # pool.map(_run_crop, arg_list[:16])
 
     if COMPUTECANADA:
         # datasets = [CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1]
@@ -210,4 +220,6 @@ if __name__ == "__main__":
 
     print(f"{ctime()}: ending ...")
     print(f"Totally get {idx} imgs!")
+    print(f"There are {nan_img_number} imgs contain NaN.")
+    print(f"There are {inf_img_number} imgs contain Inf.")
     # show_save_img_and_label(img_2D, label_2D, bbox_percentile_80, bbox_kmeans, "./rectangle_image", idx)
