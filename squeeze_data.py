@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import torch
 import os
 
-from data.const import ADNI_DATASET_DIR_1, ADNI_LABEL, COMPUTECANADA, DATA_ROOT
+from data.const import ADNI_DATASET_DIR_1, squeezed_img_folder, squeezed_label_folder
 from data.transform import get_train_transforms
 from data.get_path import get_path
 
@@ -34,27 +34,14 @@ from data.get_path import get_path
 def read_data(mri):
     img, label = nib.load(mri.img_path), nib.load(mri.label_path)
     data_np = img.get_data()
-    seg_np = label.get_data().squeeze().astype(np.float)
+    seg_np = label.get_data().squeeze()
+
+    # print(f"{data_np.dtype.type})
+
     return data_np, seg_np, img.affine, label.affine
 
 
 if __name__ == "__main__":
-    if COMPUTECANADA:
-        # DATA_ROOT = Path(str(os.environ.get("SLURM_TMPDIR"))).resolve()
-        # DATA_ROOT = Path("/project/6005889/U-Net_MRI-Data")
-        # cropped_img_folder = DATA_ROOT / "work" / "img"
-        # cropped_label_folder = DATA_ROOT / "work" / "label"
-        # DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "Data"
-        squeezed_folder = DATA_ROOT / "squeezed_ADNI"
-        squeezed_img_folder = squeezed_folder / "img"
-        squeezed_label_folder = squeezed_folder / "label"
-    else:
-        squeezed_folder = DATA_ROOT / "squeezed_ADNI"
-        squeezed_img_folder = squeezed_folder / "img"
-        squeezed_label_folder = squeezed_folder / "label"
-
-    if not os.path.exists(squeezed_folder):
-        os.mkdir(squeezed_folder)
     if not os.path.exists(squeezed_img_folder):
         os.mkdir(squeezed_img_folder)
     if not os.path.exists(squeezed_label_folder):

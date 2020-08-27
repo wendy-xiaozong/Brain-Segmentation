@@ -36,7 +36,7 @@ mkdir work
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
 #tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
-tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/scratch/Data/cropped_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
@@ -58,7 +58,7 @@ LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Unet_seg138_10/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/1/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
@@ -69,11 +69,11 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/Une
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
+       --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
-#        --use_cropped_img \
 #        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt"
 
 #echo "$(date +"%T"):  start tar data"
