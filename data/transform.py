@@ -100,7 +100,7 @@ def get_val_transform() -> Compose:
 def get_test_transform() -> Compose:  # do not resize in there
     validation_transform = Compose([
         ToCanonical(),
-        # Resample(4.0),
+        Resample(1),
         # CropOrPad(64),
         RescaleIntensity((0, 1)),
         # ToResize_only_image(),

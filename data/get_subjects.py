@@ -97,6 +97,8 @@ def get_subjects(
     visual_img_path_list = []
     visual_label_path_list = []
 
+    # img_path = [path for path ]
+
     # used for visualization
     for img_path in img_path_list:
         img_name = img_path.name

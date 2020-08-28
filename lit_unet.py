@@ -275,10 +275,6 @@ class Lightning_Unet(pl.LightningModule):
         # gpu_tracker.track()
         inputs, targets = self.prepare_batch(batch)
         pred = self(inputs)
-        # gpu_tracker.track()
-
-        # print('Model {} : params: {:4f}M'.format(._get_name(), para * type_size / 1000 / 1000))
-
         # diceloss = DiceLoss(include_background=True, to_onehot_y=True)
         # loss = diceloss.forward(input=probs, target=targets)
         # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
@@ -292,13 +288,13 @@ class Lightning_Unet(pl.LightningModule):
         #     dice_score, _, _, _ = get_score(torch.unsqueeze(prob, 0), torch.unsqueeze(target, 0))
         #     log_all_info(self, input, target, prob, batch_idx, "training", dice_score.item())
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
-        # del inputs  # Just a Try
         diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
         loss = diceloss.forward(input=pred, target=targets)
-        # gpu_tracker.track()
 
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
+
+        #
         return {
             'loss': loss,
             # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
@@ -333,10 +329,15 @@ class Lightning_Unet(pl.LightningModule):
             cur_label_subject = torchio.Subject(
                 img=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
             )
+        print(f"before transform input: {cur_img_subject.img.data.shape}")
+        print(f"before transform label: {cur_label_subject.img.data.shape}")
 
         transform = get_val_transform()
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
+        
+        print(f"after transform input: {preprocessed_img.img.data.shape}")
+        print(f"after transform label: {preprocessed_label.img.data.shape}")
 
         patch_overlap = self.hparams.patch_overlap  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
@@ -350,6 +351,7 @@ class Lightning_Unet(pl.LightningModule):
 
         for patches_batch in patch_loader:
             input_tensor = patches_batch['img'][torchio.DATA]
+            # used to convert tensor to CUDA
             if not if_path:
                 input_tensor = input_tensor.type_as(input)
             else:
@@ -473,7 +475,7 @@ class Lightning_Unet(pl.LightningModule):
         result.log('test_step_IoU', iou, sync_dist=True)
         result.log('test_step_sensitivity', sensitivity, sync_dist=True)
         result.log('test_step_specificity', specificity, sync_dist=True)
-        return {}
+        return result
 
     def test_epoch_end(self, outputs):
         # torch.stack: Concatenates sequence of tensors along a new dimension.

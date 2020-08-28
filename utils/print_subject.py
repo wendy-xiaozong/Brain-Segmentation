@@ -2,11 +2,11 @@ import torchio
 from torchio import DATA, PATH
 
 from torch.utils.data import DataLoader
-from data.get_subjects import get_processed_subjects
+from data.get_subjects import get_subjects
 
 
 if __name__ == "__main__":
-    subjects, visual_img_path_list, visual_label_path_list = get_processed_subjects()
+    subjects, visual_img_path_list, visual_label_path_list = get_subjects(use_cropped_data=False)
     test_imageDataset = torchio.ImagesDataset(subjects[:2])
 
     # patches_validation_set = torchio.Queue(
