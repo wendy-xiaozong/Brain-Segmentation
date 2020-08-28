@@ -118,6 +118,8 @@ def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
     data_np, seg_npy = img.get_data(), label.get_data().squeeze()
 
+    print(data_np)
+
     global nan_img_number, inf_img_number
 
     # not nan, infinity or a value too large for dtype('float64').
@@ -174,6 +176,10 @@ def run_crop(img_path, label_path, img_folder, label_folder):
         return
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
+
+    print(f"img shape: {cropped_img.shape}")
+    print(f"label shape: {cropped_label.shape}")
+
     cropped_img_file = nib.Nifti1Image(img, img_affine)
     nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
     cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
@@ -212,6 +218,7 @@ if __name__ == "__main__":
     for mri in tqdm(mri_list):
         idx += 1
         run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+        break
 
     # run_crop(
     #     "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",

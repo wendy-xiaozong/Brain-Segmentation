@@ -335,7 +335,7 @@ class Lightning_Unet(pl.LightningModule):
         transform = get_val_transform()
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
-        
+
         print(f"after transform input: {preprocessed_img.img.data.shape}")
         print(f"after transform label: {preprocessed_label.img.data.shape}")
 

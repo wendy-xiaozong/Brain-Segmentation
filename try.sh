@@ -41,8 +41,8 @@ cd work
 
 # run script
 echo -e '\n\n\n'
-python3 /home/jueqi/scratch/Unet_seg138_13/squeezed_data.py
+python3 /home/jueqi/scratch/Unet_seg138_13/cropping.py
 
 # tar -cf /home/jueqi/scratch/Data/squeezed_ADNI.tar cropped_img/ cropped_label/
-tar -cf /home/jueqi/scratch/Data/squeezed_ADNI.tar squeezed_img/ squeezed_label/
+# tar -cf /home/jueqi/scratch/Data/squeezed_ADNI.tar squeezed_img/ squeezed_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
