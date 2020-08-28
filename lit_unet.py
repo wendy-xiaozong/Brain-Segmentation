@@ -329,15 +329,16 @@ class Lightning_Unet(pl.LightningModule):
             cur_label_subject = torchio.Subject(
                 img=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
             )
-        print(f"before transform input: {cur_img_subject.img.data.shape}")
-        print(f"before transform label: {cur_label_subject.img.data.shape}")
+        # This is different? why?
+        # print(f"before transform input: {cur_img_subject.img.data.shape}")
+        # print(f"before transform label: {cur_label_subject.img.data.shape}")
 
         transform = get_val_transform()
         preprocessed_img = transform(cur_img_subject)
         preprocessed_label = transform(cur_label_subject)
 
-        print(f"after transform input: {preprocessed_img.img.data.shape}")
-        print(f"after transform label: {preprocessed_label.img.data.shape}")
+        # print(f"after transform input: {preprocessed_img.img.data.shape}")
+        # print(f"after transform label: {preprocessed_label.img.data.shape}")
 
         patch_overlap = self.hparams.patch_overlap  # is there any constrain?
         grid_sampler = torchio.inference.GridSampler(
@@ -369,7 +370,11 @@ class Lightning_Unet(pl.LightningModule):
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
-        output_tensor, target_tensor = self.compute_from_aggregating(input, target, False)  # in CPU
+
+        print("validation step:")
+        print(f"input shape: {input.shape}")
+        print(f"target shape: {target.shape}")
+        output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
 
         # pred = self(inputs)
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
@@ -401,6 +406,10 @@ class Lightning_Unet(pl.LightningModule):
         # visualization part
         cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
+
+        print("validation end:")
+        print(f"img path: {cur_img_path}")
+        print(f"label path: {cur_label_path}")
 
         img, output_tensor, target_tensor = self.compute_from_aggregating(cur_img_path, cur_label_path,
                                                                           if_path=True, type_as_tensor=outputs)
