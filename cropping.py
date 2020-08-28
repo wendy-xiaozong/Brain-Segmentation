@@ -179,6 +179,8 @@ def run_crop(img_path, label_path, img_folder, label_folder):
 
     print(f"img shape: {cropped_img.shape}")
     print(f"label shape: {cropped_label.shape}")
+    print(f"img type: {cropped_img.dtype}")
+    print(f"label type: {cropped_label.dtype}")
 
     cropped_img_file = nib.Nifti1Image(img, img_affine)
     nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
