@@ -13,6 +13,7 @@ def get_path(dataset):
     originals.extend(list(Path(ADNI_DATASET_DIR_2).glob("**/*.nii")))
     # print(f"len originals: {len(originals)}")
 
+    print(f"get {len(originals)} of imgs")
     regex = re.compile(r"MALPEM-ADNI_(.*?).nii.gz")
     brain_label_set = set(label for label in os.listdir(brain_label) if regex.match(label))
 
