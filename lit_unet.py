@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from torchio import DATA, PATH
 from torch.utils.data import DataLoader
 from data.get_subjects import get_subjects
-from data.const import COMPUTECANADA, delete_img_folder, delete_label_folder
+from data.const import COMPUTECANADA
 from data.transform import get_train_transforms, get_val_transform, get_test_transform
 from argparse import ArgumentParser
 from model.unet.unet import UNet
@@ -103,8 +103,6 @@ class Lightning_Unet(pl.LightningModule):
         self.val_times = 0
         self.test_times = 0
         self.df = pd.DataFrame(columns=['filename'])
-        self.delete_img_folder = delete_img_folder
-        self.delete_label_folder = delete_label_folder
 
     def train_dataloader(self) -> DataLoader:
         training_transform = get_train_transforms()
@@ -218,7 +216,7 @@ class Lightning_Unet(pl.LightningModule):
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
         result = pl.TrainResult(minimize=loss)
-        result.log("train_loss", loss, prog_bar=True, sync_dist=True)
+        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True)
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
         # So they would return 0 on some of the classes, making the matrixs not accurate
 
@@ -289,10 +287,6 @@ class Lightning_Unet(pl.LightningModule):
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
-
-        print("validation step:")
-        print(f"input shape: {input.shape}")
-        print(f"target shape: {target.shape}")
         output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
 
         # pred = self(inputs)
@@ -312,15 +306,17 @@ class Lightning_Unet(pl.LightningModule):
                                                         include_background=True)
 
         result = pl.EvalResult()
-        return {'val_step_loss': loss_cuda,
-                'val_step_dice': dice,
-                'val_step_IoU': iou,
-                "val_step_sensitivity": sensitivity,
-                "val_step_specificity": specificity}
-
-    # def validation_step_end(self, outputs) -> Dict[str, Tensor]:
-    #     batch_preds = torch.stack([x['val_step_preds'] for x in outputs])
-    #     batch_targets = torch.stack([x['val_step_target'] for x in outputs])
+        result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=True,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('val_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('val_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('val_loss', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        return result
 
     # Called at the end of the validation epoch with the outputs of all validation steps.
     def validation_epoch_end(self, outputs):
@@ -332,8 +328,8 @@ class Lightning_Unet(pl.LightningModule):
                                                                           if_path=True, type_as_tensor=outputs)
         # print(f"validation_epoch_end_output_tensor: {output_tensor.requires_grad}")
         # print(f"validation_epoch_end_target_tensor: {target_tensor.requires_grad}")
-        output_tensor_cuda = output_tensor.type_as(outputs[0]['val_step_dice'])
-        target_tensor_cuda = target_tensor.type_as(outputs[0]['val_step_dice'])
+        output_tensor_cuda = output_tensor.type_as(outputs[0]['val_dice'])
+        target_tensor_cuda = target_tensor.type_as(outputs[0]['val_dice'])
         del output_tensor, target_tensor
         # using CUDA
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
@@ -347,18 +343,7 @@ class Lightning_Unet(pl.LightningModule):
                      self.val_times, filename=None)
         self.val_times += 1
 
-        # torch.stack: Concatenates sequence of tensors along a new dimension.
-        avg_loss = torch.stack([x['val_step_loss'] for x in outputs]).mean()
-        avg_val_dice = torch.stack([x['val_step_dice'] for x in outputs]).mean()
-        tensorboard_logs = {
-            "val_loss": avg_loss,
-            "val_dice": avg_val_dice,
-            "val_IoU": torch.stack([x['val_step_IoU'] for x in outputs]).mean(),
-            "val_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]).mean(),
-            "val_specificity": torch.stack([x['val_step_specificity'] for x in outputs]).mean(),
-        }
-        return {"loss": avg_loss, "val_loss": avg_loss, "val_dice": avg_val_dice, 'log': tensorboard_logs,
-                'progress_bar': {'val_dice': avg_val_dice}}
+        return pl.EvalResult()
 
     def test_step(self, batch, batch_idx):
         input, target = self.prepare_batch(batch)
@@ -397,12 +382,15 @@ class Lightning_Unet(pl.LightningModule):
         #     self.df.loc[self.df.shape[0]] = {"filename": filename}
 
         result = pl.EvalResult()
-        result.log('test_step_dice', dice, sync_dist=True)
-        result.log('test_step_IoU', iou, sync_dist=True)
-        result.log('test_step_sensitivity', sensitivity, sync_dist=True)
-        result.log('test_step_specificity', specificity, sync_dist=True)
+        result.log('test_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('test_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('test_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
+        result.log('test_loss', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+                   reduce_fx=torch.mean, sync_dist=True)
 
-        # result.log('test_dice', )
         return result
 
     def test_epoch_end(self, outputs):
@@ -423,7 +411,7 @@ class Lightning_Unet(pl.LightningModule):
         parameters defined here will be available to the model through self.hparams
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--batch_size", type=int, default=2, help='Batch size', dest='batch_size')
+        parser.add_argument("--batch_size", type=int, default=1, help='Batch size', dest='batch_size')
         # From the generalizedDiceLoss paper
         parser.add_argument("--learning_rate", type=float, default=1e-4, help='Learning rate')
         # parser.add_argument("--normalization", type=str, default='Group', help='the way of normalization')

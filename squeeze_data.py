@@ -47,25 +47,28 @@ if __name__ == "__main__":
     if not os.path.exists(squeezed_label_folder):
         os.mkdir(squeezed_label_folder)
 
-    for mri in tqdm(get_path(ADNI_DATASET_DIR_1)):
-        try:
-            data_np, seg_np, img_affine, label_affine = read_data(mri)
-        except OSError:
-            print(f"{mri.img_path} this file is broken!")
-            continue
+    mri_list = [mri for mri in get_path(ADNI_DATASET_DIR_1)]
+    print(f"totally get {len(mri_list)} MRI files!")
 
-        if data_np.shape != seg_np.shape:
-            print(f"{mri.img_path}'s shape is not the same as it's label's shape!")
-            continue
-
-        # get the file name
-        _, filename = os.path.split(mri.img_path)
-        filename, _ = os.path.splitext(filename)
-
-        img_file = nib.Nifti1Image(data_np, img_affine)
-        nib.save(img_file, squeezed_img_folder / Path(f"{filename}.nii"))
-        label_file = nib.Nifti1Image(seg_np, label_affine)
-        nib.save(label_file, squeezed_label_folder / Path(f"{filename}.nii.gz"))
+    # for mri in tqdm(mri_list):
+    #     try:
+    #         data_np, seg_np, img_affine, label_affine = read_data(mri)
+    #     except OSError:
+    #         print(f"{mri.img_path} this file is broken!")
+    #         continue
+    #
+    #     if data_np.shape != seg_np.shape:
+    #         print(f"{mri.img_path}'s shape is not the same as it's label's shape!")
+    #         continue
+    #
+    #     # get the file name
+    #     _, filename = os.path.split(mri.img_path)
+    #     filename, _ = os.path.splitext(filename)
+    #
+    #     img_file = nib.Nifti1Image(data_np, img_affine)
+    #     nib.save(img_file, squeezed_img_folder / Path(f"{filename}.nii"))
+    #     label_file = nib.Nifti1Image(seg_np, label_affine)
+    #     nib.save(label_file, squeezed_label_folder / Path(f"{filename}.nii.gz"))
 
         # print(f"{ctime()}: Successfully save file {filename} file!")
 

@@ -23,6 +23,8 @@ def main(hparams):
             os.mkdir(Path(__file__).resolve().parent / "checkpoint")
     else:
         default_root_dir = "./log"
+        if not os.path.exists(default_root_dir):
+            os.mkdir(default_root_dir)
         checkpoint_file = "./log/checkpoint"
         if not os.path.exists(checkpoint_file):
             os.mkdir(checkpoint_file)

@@ -43,7 +43,7 @@ else:
     processed_folder = DATA_ROOT / "processed_ADNI"
     processed_img_folder = processed_folder / "img"
     processed_label_folder = processed_folder / "label"
-    cropped_folder = DATA_ROOT / "cropped_resample"
+    cropped_folder = DATA_ROOT / "cropped"
     cropped_img_folder = cropped_folder / "img"
     cropped_label_folder = cropped_folder / "label"
 
