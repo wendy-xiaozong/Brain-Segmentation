@@ -112,10 +112,10 @@ def crop_to_nonzero(data, seg):
 
 def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
-    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
+    data_np, seg_npy = img.get_data(), label.get_data().squeeze
 
-    assert (np.isnan(data_np).any()), "There is NaN in the img"
-    assert (not np.isfinite(data_np).all())
+    if np.isnan(data_np).any() or not np.isfinite(data_np).all():
+        raise ValueError("There is NaN or infinite data in the img!")
 
     return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
@@ -154,7 +154,8 @@ def run_crop(img_path, label_path, img_folder, label_folder):
     except OSError:
         print("OSError! skip file!")
         return
-    except AssertionError:
+    except ValueError as error:
+        print(f"{repr(error)}")
         os.system(f"mv {img_path} {strange_img_folder}")
         os.system(f"mv {label_path} {strange_label_folder}")
         return
