@@ -310,6 +310,8 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
+
+        result = pl.EvalResult()
         return {'val_step_loss': loss_cuda,
                 'val_step_dice': dice,
                 'val_step_IoU': iou,
@@ -325,10 +327,6 @@ class Lightning_Unet(pl.LightningModule):
         # visualization part
         cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
-
-        print("validation end:")
-        print(f"img path: {cur_img_path}")
-        print(f"label path: {cur_label_path}")
 
         img, output_tensor, target_tensor = self.compute_from_aggregating(cur_img_path, cur_label_path,
                                                                           if_path=True, type_as_tensor=outputs)

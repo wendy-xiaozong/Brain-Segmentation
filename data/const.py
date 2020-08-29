@@ -34,6 +34,8 @@ if COMPUTECANADA:
     squeezed_label_folder = DATA_ROOT / "squeezed_label"
     cropped_img_folder = DATA_ROOT / "cropped_img"
     cropped_label_folder = DATA_ROOT / "cropped_label"
+    strange_img_folder = DATA_ROOT / "strange_img"
+    strange_label_folder = DATA_ROOT / "strange_label"
     delete_img_folder = DATA_ROOT / "deleted_img"
     delete_label_folder = DATA_ROOT / "deleted_label"
 else:

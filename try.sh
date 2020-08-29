@@ -43,6 +43,6 @@ cd work
 echo -e '\n\n\n'
 python3 /home/jueqi/scratch/Unet_seg138_13/cropping.py
 
-# tar -cf /home/jueqi/scratch/Data/squeezed_ADNI.tar cropped_img/ cropped_label/
-# tar -cf /home/jueqi/scratch/Data/squeezed_ADNI.tar squeezed_img/ squeezed_label/
+tar -cf /home/jueqi/scratch/Data/cropped_ADNI.tar cropped_img/ cropped_label/
+tar -cf /home/jueqi/scratch/Data/strange_ADNI.tar strange_img/ strange_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py

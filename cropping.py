@@ -35,14 +35,10 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from data.const import (COMPUTECANADA,
                         DATA_ROOT,
                         ADNI_DATASET_DIR_1,
-                        CC359_DATASET_DIR,
-                        NFBS_DATASET_DIR,
+                        strange_img_folder,
+                        strange_label_folder,
                         cropped_img_folder,
                         cropped_label_folder)
-
-
-nan_img_number = 0
-inf_img_number = 0
 
 # have similar outcome to the kmeans, but kmeans have dramtically better result on some images
 def create_nonzero_mask_percentile_80(data):
@@ -118,24 +114,8 @@ def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
     data_np, seg_npy = img.get_data(), label.get_data().squeeze()
 
-    print(data_np)
-
-    global nan_img_number, inf_img_number
-
-    # not nan, infinity or a value too large for dtype('float64').
-    if np.isnan(data_np).any():
-        nan_img_number += 1
-        print("there is nan in original image!")
-        data_np[np.isnan(data_np)] = 0.0
-
-    if not np.isfinite(data_np).all():
-        inf_img_number += 1
-        print("there is infinite number in the image")
-        # find the max and min
-        max = np.nanmax(data_np[data_np != np.inf])
-        min = np.nanmin(data_np[data_np != -np.inf])
-        data_np[data_np == np.inf] = max
-        data_np[data_np == -np.inf] = min
+    assert (np.isnan(data_np).any()), "There is NaN in the img"
+    assert (not np.isfinite(data_np).all())
 
     return data_np, seg_npy, img.affine, label.affine, img.header, label.header
 
@@ -174,15 +154,13 @@ def run_crop(img_path, label_path, img_folder, label_folder):
     except OSError:
         print("OSError! skip file!")
         return
+    except AssertionError:
+        os.system(f"mv {img_path} {strange_img_folder}")
+        os.system(f"mv {label_path} {strange_label_folder}")
+        return
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
-
-    print(f"img shape: {cropped_img.shape}")
-    print(f"label shape: {cropped_label.shape}")
-    print(f"img type: {cropped_img.dtype}")
-    print(f"label type: {cropped_label.dtype}")
-
-    cropped_img_file = nib.Nifti1Image(img, img_affine)
+    cropped_img_file = nib.Nifti1Image(cropped_img, img_affine)
     nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
     cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
     nib.save(cropped_label_file, label_folder / Path(f"{filename}.nii.gz"))
@@ -194,6 +172,10 @@ if __name__ == "__main__":
         os.mkdir(cropped_img_folder)
     if not os.path.exists(cropped_label_folder):
         os.mkdir(cropped_label_folder)
+    if not os.path.exists(strange_img_folder):
+        os.mkdir(strange_img_folder)
+    if not os.path.exists(strange_label_folder):
+        os.mkdir(strange_label_folder)
 
     # img_path_list = sorted([
     #     Path(f) for f in sorted(glob(f"{str(img_path)}/**/*.nii*", recursive=True))
@@ -229,6 +211,4 @@ if __name__ == "__main__":
 
     print(f"{ctime()}: ending ...")
     print(f"Totally get {idx} imgs!")
-    print(f"There are {nan_img_number} imgs contain NaN.")
-    print(f"There are {inf_img_number} imgs contain Inf.")
     # show_save_img_and_label(img_2D, label_2D, bbox_percentile_80, bbox_kmeans, "./rectangle_image", idx)
