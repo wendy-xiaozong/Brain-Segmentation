@@ -69,6 +69,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
+       --fast_dev_run \
        --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \

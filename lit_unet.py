@@ -31,79 +31,6 @@ import pynvml
 import numpy as np
 
 
-# class MemTracker(object):
-#     """
-#     Class used to track pytorch memory usage
-#     Arguments:
-#         frame: a frame to detect current py-file runtime
-#         detail(bool, default True): whether the function shows the detail gpu memory usage
-#         path(str): where to save log file
-#         verbose(bool, default False): whether show the trivial exception
-#         device(int): GPU number, default is 0
-#     """
-#     def __init__(self, frame, detail=True, path='', verbose=False, device=0):
-#         self.frame = frame
-#         self.print_detail = detail
-#         self.last_tensor_sizes = set()
-#         self.gpu_profile_fn = path + f'{datetime.datetime.now():%d-%b-%y-%H:%M:%S}-gpu_mem_track.txt'
-#         self.verbose = verbose
-#         self.begin = True
-#         self.device = device
-#
-#         self.func_name = frame.f_code.co_name
-#         self.filename = frame.f_globals["__file__"]
-#         if (self.filename.endswith(".pyc") or
-#                 self.filename.endswith(".pyo")):
-#             self.filename = self.filename[:-1]
-#         self.module_name = self.frame.f_globals["__name__"]
-#         self.curr_line = self.frame.f_lineno
-#
-#     def get_tensors(self):
-#         for obj in gc.get_objects():
-#             try:
-#                 if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-#                     tensor = obj
-#                 else:
-#                     continue
-#                 if tensor.is_cuda:
-#                     yield tensor
-#             except Exception as e:
-#                 if self.verbose:
-#                     print('A trivial exception occured: {}'.format(e))
-#
-#     def track(self):
-#         """
-#         Track the GPU memory usage
-#         """
-#         pynvml.nvmlInit()
-#         handle = pynvml.nvmlDeviceGetHandleByIndex(self.device)
-#         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
-#         self.curr_line = self.frame.f_lineno
-#         where_str = self.module_name + ' ' + self.func_name + ':' + ' line ' + str(self.curr_line)
-#
-#         with open(self.gpu_profile_fn, 'a+') as f:
-#
-#             if self.begin:
-#                 f.write(f"GPU Memory Track | {datetime.datetime.now():%d-%b-%y-%H:%M:%S} |"
-#                         f" Total Used Memory:{meminfo.used/1000**2:<7.1f}Mb\n\n")
-#                 self.begin = False
-#
-#             if self.print_detail is True:
-#                 ts_list = [tensor.size() for tensor in self.get_tensors()]
-#                 new_tensor_sizes = {(type(x), tuple(x.size()), ts_list.count(x.size()), np.prod(np.array(x.size()))*4/1000**2)
-#                                     for x in self.get_tensors()}
-#                 for t, s, n, m in new_tensor_sizes - self.last_tensor_sizes:
-#                     f.write(f'+ | {str(n)} * Size:{str(s):<20} | Memory: {str(m*n)[:6]} M | {str(t):<20}\n')
-#                 for t, s, n, m in self.last_tensor_sizes - new_tensor_sizes:
-#                     f.write(f'- | {str(n)} * Size:{str(s):<20} | Memory: {str(m*n)[:6]} M | {str(t):<20} \n')
-#                 self.last_tensor_sizes = new_tensor_sizes
-#
-#             f.write(f"\nAt {where_str:<50}"
-#                     f"Total Used Memory:{meminfo.used/1000**2:<7.1f}Mb\n\n")
-#
-#         pynvml.nvmlShutdown()
-
-
 class Lightning_Unet(pl.LightningModule):
     def __init__(self, hparams):
         super(Lightning_Unet, self).__init__()
@@ -260,6 +187,11 @@ class Lightning_Unet(pl.LightningModule):
 
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
+        input_path, target_path = batch["img"][PATH], batch["label"][PATH]
+
+        print(f"input path: {input_path}")
+        print(f"target path: {target_path}")
+
         if torch.isnan(inputs).any():
             print("there is nan in input data!")
             inputs[inputs != inputs] = 0
@@ -269,10 +201,6 @@ class Lightning_Unet(pl.LightningModule):
         return inputs, targets
 
     def training_step(self, batch, batch_idx):
-        # frame = inspect.currentframe()
-        # gpu_tracker = MemTracker(frame)
-
-        # gpu_tracker.track()
         inputs, targets = self.prepare_batch(batch)
         pred = self(inputs)
         # diceloss = DiceLoss(include_background=True, to_onehot_y=True)
@@ -294,16 +222,12 @@ class Lightning_Unet(pl.LightningModule):
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
-        #
-        return {
-            'loss': loss,
-            # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
-            # So they would return 0 on some of the classes, making the matrixs not accurate
-            # 'log': {'train_loss': loss, 'train_dice': dice, 'train_IoU': iou},
-            'log': {'train_loss': loss},
-            # 'progress_bar': {'train_loss': loss, 'train_dice': dice}
-            # 'progress_bar': {'train_loss': loss}
-        }
+        result = pl.TrainResult(minimize=loss)
+        result.log("train_loss", loss, prog_bar=True, sync_dist=True)
+        # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
+        # So they would return 0 on some of the classes, making the matrixs not accurate
+
+        return result
 
     # It supports only need when using DP or DDP2, I should not need it because I am using ddp
     # but I have some problem with the dice score, So I am just trying ...
@@ -484,6 +408,8 @@ class Lightning_Unet(pl.LightningModule):
         result.log('test_step_IoU', iou, sync_dist=True)
         result.log('test_step_sensitivity', sensitivity, sync_dist=True)
         result.log('test_step_specificity', specificity, sync_dist=True)
+
+        # result.log('test_dice', )
         return result
 
     def test_epoch_end(self, outputs):
