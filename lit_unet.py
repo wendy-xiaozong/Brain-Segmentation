@@ -134,7 +134,6 @@ class Lightning_Unet(pl.LightningModule):
         training_loader = DataLoader(patches_training_set,
                                      batch_size=self.hparams.batch_size)
 
-        # print('Training set:', len(train_imageDataset), 'subjects')
         print(f"{ctime()}: getting number of training subjects {len(training_loader)}")
         return training_loader
 
@@ -187,10 +186,6 @@ class Lightning_Unet(pl.LightningModule):
 
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
-        input_path, target_path = batch["img"][PATH], batch["label"][PATH]
-
-        print(f"input path: {input_path}")
-        print(f"target path: {target_path}")
 
         if torch.isnan(inputs).any():
             print("there is nan in input data!")
