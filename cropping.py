@@ -112,12 +112,12 @@ def crop_to_nonzero(data, seg):
 
 def crop_from_file(img_path, label_path):
     img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
-    data_np, seg_npy = img.get_data(), label.get_data().squeeze
+    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
 
     if np.isnan(data_np).any() or not np.isfinite(data_np).all():
         raise ValueError("There is NaN or infinite data in the img!")
 
-    return data_np, seg_npy, img.affine, label.affine, img.header, label.header
+    return data_np, seg_npy, img.affine, label.affine
 
 
 def show_save_img_and_label(img_2D, label_2D, bbox_percentile_80, bbox_kmeans, path, idx):
@@ -150,7 +150,7 @@ def run_crop(img_path, label_path, img_folder, label_folder):
 
     print(f"{ctime()}: Start processing {filename} ...")
     try:
-        img, label, img_affine, label_affine, img_header, label_header = crop_from_file(img_path, label_path)
+        img, label, img_affine, label_affine = crop_from_file(img_path, label_path)
     except OSError:
         print("OSError! skip file!")
         return
@@ -203,6 +203,7 @@ if __name__ == "__main__":
     for mri in tqdm(mri_list):
         idx += 1
         run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+        break
 
     # run_crop(
     #     "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",
