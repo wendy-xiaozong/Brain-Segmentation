@@ -79,6 +79,9 @@ def get_subjects(
             Path(f) for f in sorted(glob(f"{str(squeezed_label_folder)}/**/*.nii.gz", recursive=True))
         ])
 
+    print(f"get {len(img_path_list)} of img")
+    print(f"get {len(label_path_list)} of label")
+
     subjects = [
         tio.Subject(
             img=tio.Image(path=img_path, type=tio.INTENSITY),
