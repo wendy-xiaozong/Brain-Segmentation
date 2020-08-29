@@ -35,6 +35,7 @@ tar -xf /home/jueqi/scratch/Data/all_ADNI_data.tar -C work && echo "$(date +"%T"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
+ls -a
 # tar -tvf .tar | grep ^d
 ## The computations are done, so clean up the data set...
 # avoiding batch_size < gpus number
