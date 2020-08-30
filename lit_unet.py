@@ -325,11 +325,11 @@ class Lightning_Unet(pl.LightningModule):
         cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
 
         img, output_tensor, target_tensor = self.compute_from_aggregating(cur_img_path, cur_label_path,
-                                                                          if_path=True, type_as_tensor=outputs)
+                                                                          if_path=True, type_as_tensor=validation_step_output_result)
         # print(f"validation_epoch_end_output_tensor: {output_tensor.requires_grad}")
         # print(f"validation_epoch_end_target_tensor: {target_tensor.requires_grad}")
-        output_tensor_cuda = output_tensor.type_as(outputs['val_dice'])
-        target_tensor_cuda = target_tensor.type_as(outputs['val_dice'])
+        output_tensor_cuda = output_tensor.type_as(validation_step_output_result['val_dice'])
+        target_tensor_cuda = target_tensor.type_as(validation_step_output_result['val_dice'])
         del output_tensor, target_tensor
         # using CUDA
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
