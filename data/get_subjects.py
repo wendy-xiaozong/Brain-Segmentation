@@ -104,11 +104,10 @@ def get_subjects(
     visual_img_path_list = []
     visual_label_path_list = []
 
-    # img_path = [path for path ]
-
     # used for visualization
     for img_path in img_path_list:
         img_name = img_path.name
+        img_name = img_name + ".gz"
         if img_name in images_baseline_set:
             visual_img_path_list.append(img_path)
     for label_path in label_path_list:
