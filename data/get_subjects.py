@@ -92,9 +92,6 @@ def get_subjects(
         ) for img_path, label_path in zip(img_path_list, label_path_list)
     ]
 
-    print(f"img path: {img_path_list[0]}")
-    print(f"label path: {label_path_list[0]}")
-
     fine_tune_set_file = Path(__file__).resolve().parent.parent.parent / "ADNI_MALPEM_baseline_1069.csv"
     file_df = pd.read_csv(fine_tune_set_file, sep=',')
     images_baseline_set = set(file_df['filename'])

@@ -273,8 +273,7 @@ class Lightning_Unet(pl.LightningModule):
             if not if_path:
                 input_tensor = input_tensor.type_as(input)
             else:
-                print(type_as_tensor)
-                input_tensor = input_tensor.type_as(type_as_tensor[0]['val_dice'])
+                input_tensor = input_tensor.type_as(type_as_tensor['val_dice'])
             locations = patches_batch[torchio.LOCATION]
             preds = self(input_tensor)  # use cuda
             labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
@@ -329,8 +328,8 @@ class Lightning_Unet(pl.LightningModule):
                                                                           if_path=True, type_as_tensor=outputs)
         # print(f"validation_epoch_end_output_tensor: {output_tensor.requires_grad}")
         # print(f"validation_epoch_end_target_tensor: {target_tensor.requires_grad}")
-        output_tensor_cuda = output_tensor.type_as(outputs[0]['val_dice'])
-        target_tensor_cuda = target_tensor.type_as(outputs[0]['val_dice'])
+        output_tensor_cuda = output_tensor.type_as(outputs['val_dice'])
+        target_tensor_cuda = target_tensor.type_as(outputs['val_dice'])
         del output_tensor, target_tensor
         # using CUDA
         dice, iou, sensitivity, specificity = get_score(pred=output_tensor_cuda, target=target_tensor_cuda,
@@ -394,17 +393,17 @@ class Lightning_Unet(pl.LightningModule):
 
         return result
 
-    def test_epoch_end(self, outputs):
-        # torch.stack: Concatenates sequence of tensors along a new dimension.
-        tensorboard_logs = {
-            "test_dice": torch.stack([x['val_step_dice'] for x in outputs]).mean(),
-            "test_IoU": torch.stack([x['val_step_IoU'] for x in outputs]).mean(),
-            "test_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]).mean(),
-            "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs]).mean()
-        }
-        # save the file
-        # self.df.to_csv(Path(__file__).resolve().parent.parent.parent / f"run:{self.hparams.run}-deleted_data.csv")
-        return {'log': tensorboard_logs}
+    # def test_epoch_end(self, outputs):
+    #     # torch.stack: Concatenates sequence of tensors along a new dimension.
+    #     tensorboard_logs = {
+    #         "test_dice": torch.stack([x['val_step_dice'] for x in outputs]).mean(),
+    #         "test_IoU": torch.stack([x['val_step_IoU'] for x in outputs]).mean(),
+    #         "test_sensitivity": torch.stack([x['val_step_sensitivity'] for x in outputs]).mean(),
+    #         "test_specificity": torch.stack([x['val_step_specificity'] for x in outputs]).mean()
+    #     }
+    #     # save the file
+    #     # self.df.to_csv(Path(__file__).resolve().parent.parent.parent / f"run:{self.hparams.run}-deleted_data.csv")
+    #     return {'log': tensorboard_logs}
 
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:
