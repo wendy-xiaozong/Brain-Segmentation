@@ -36,13 +36,13 @@ def main(hparams):
         filepath=checkpoint_file,
         save_top_k=3,
         verbose=True,
-        monitor='val_dice',
+        # monitor='val_dice',
         mode='max',
         prefix=''
     )
 
     early_stop_callback = EarlyStopping(
-        monitor='val_loss',
+        # monitor='val_loss',
         min_delta=0.00,
         patience=300,
         strict=True,

@@ -305,7 +305,7 @@ class Lightning_Unet(pl.LightningModule):
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
 
-        result = pl.EvalResult()
+        result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
         result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=True,
@@ -319,7 +319,7 @@ class Lightning_Unet(pl.LightningModule):
         return result
 
     # Called at the end of the validation epoch with the outputs of all validation steps.
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, validation_step_output_result):
         # visualization part
         cur_img_path = self.visual_img_path_list[self.val_times % len(self.visual_img_path_list)]
         cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
@@ -343,7 +343,7 @@ class Lightning_Unet(pl.LightningModule):
                      self.val_times, filename=None)
         self.val_times += 1
 
-        return pl.EvalResult()
+        return validation_step_output_result
 
     def test_step(self, batch, batch_idx):
         input, target = self.prepare_batch(batch)
@@ -390,7 +390,6 @@ class Lightning_Unet(pl.LightningModule):
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('test_loss', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-
         return result
 
     # def test_epoch_end(self, outputs):
