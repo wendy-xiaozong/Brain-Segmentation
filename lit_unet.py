@@ -273,7 +273,7 @@ class Lightning_Unet(pl.LightningModule):
             if not if_path:
                 input_tensor = input_tensor.type_as(input)
             else:
-                input_tensor = input_tensor.type_as(type_as_tensor[0]['val_step_dice'])
+                input_tensor = input_tensor.type_as(type_as_tensor[0]['val_dice'])
             locations = patches_batch[torchio.LOCATION]
             preds = self(input_tensor)  # use cuda
             labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
