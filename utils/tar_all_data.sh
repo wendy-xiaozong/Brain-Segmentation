@@ -7,4 +7,5 @@
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
 #SBATCH --mail-type=ALL
 
-tar -cf /home/jueqi/projects/def-jlevman/U-Net_MRI-Data/all_ADNI_data.tar /home/jueqi/projects/def-jlevman/U-Net_MRI-Data/ADNI
+cd /home/jueqi/projects/def-jlevman/U-Net_MRI-Data/
+tar -cf all_ADNI_data.tar ADNI/
