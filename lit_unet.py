@@ -185,6 +185,11 @@ class Lightning_Unet(pl.LightningModule):
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
 
+        # print the path
+        img_path, label_path = batch["img"][PATH], batch["label"][PATH]
+        print(f"img path: {img_path}")
+        print(f"label path: {label_path}")
+
         if torch.isnan(inputs).any():
             print("there is nan in input data!")
             inputs[inputs != inputs] = 0
@@ -216,7 +221,7 @@ class Lightning_Unet(pl.LightningModule):
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
         result = pl.TrainResult(minimize=loss)
-        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True)
+        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True, reduce_fx=torch.mean)
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
         # So they would return 0 on some of the classes, making the matrixs not accurate
 
