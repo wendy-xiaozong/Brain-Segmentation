@@ -184,7 +184,7 @@ class Lightning_Unet(pl.LightningModule):
                 'scheduler': ReduceLROnPlateau(optimizer=optimizer, mode='max', factor=0.5,
                                                patience=10, min_lr=1e-6),
                 # might need to change here
-                'monitor': 'val_dice',  # Default: val_loss
+                'monitor': 'val_checkpoint_on',  # Default: val_loss
                 'reduce_on_plateau': False,  # For ReduceLROnPlateau scheduler, default
                 # 'interval': 'step',
                 'interval': 'epoch',

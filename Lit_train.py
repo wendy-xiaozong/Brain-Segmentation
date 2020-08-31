@@ -47,7 +47,7 @@ def main(hparams):
         patience=300,
         strict=True,
         verbose=False,
-        mode='min'
+        mode='max'
     )
 
     tb_logger = loggers.TensorBoardLogger(hparams.TensorBoardLogger)
