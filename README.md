@@ -1,25 +1,5 @@
 # To do
-- [X] get the path
-- [X] using patch-based pipelines
-- [X] read about multi-classification
-- [X] test if the metrics works
-- [X] do this with another subject list (Or do I really need this? a separate list of path might be more helpful actually)
-- [X] why the log part do not work
-- [X] rewrite the store log part
-- [X] why the model can not learn??? some part must be wrong. (Resample + cropped): it does a litte bit better, but it still happen again
-- [X] try again not include the background
-- [X] why the dice score is always zero???
-- [X] fix the bug about torchio (???)
-- [X] adding the CPU number part
-- [X] add the id in the log image part
-- [X] add the one more layer
-- [X] set the `num_workers` = 0
-- [X] make the torchio.inference.GridAggregator work in CPU
-- [X] make the training like the HighResNet
-- [X] using He initialization, and only using two GPU (The default one in pytorch is kaiming's initialization)
-- [X] write the whole picture part in every validation step
-- [X] change the learning rate to more larger
-- [X] MyUnet cannot use to pick images
+- [ ] Need to add the loss in the validation to compare
 - [ ] read other people's patch size (?), and training time, and learning rate
 - [ ] check the learning rate 
 - [ ] check what I did in the padding part
@@ -75,7 +55,7 @@ the label data (in ADNI, label data have an extra dimension like this (1, 192, )
 - But after using the resample, cropped, and GeneralizedDiceLoss. The model would not learn at all ( the loss is always around 1). Very weird
 - ddp2 cannot be used in Compute Canada
 - When I directly using the patches to compute the dice score, it return quite small number (almost equal to 0), but when I use the whole image to compute, it would return the normal number
-- Let my model run with only one GPU, ( this isn't working at all )
+- Let my model run with only one GPU, ( this isn't helping anything at all )
 
 
 ![](./img/brain_parcellation.png)

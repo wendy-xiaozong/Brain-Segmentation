@@ -180,15 +180,20 @@ class Lightning_Unet(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
         # need to find what other used here
-        scheduler = {
-                'scheduler': ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.5,
-                                               patience=4, min_lr=1e-6),
+        lr_dict = {
+                'scheduler': ReduceLROnPlateau(optimizer=optimizer, mode='max', factor=0.5,
+                                               patience=10, min_lr=1e-6),
+                # might need to change here
                 'monitor': 'val_dice',  # Default: val_loss
+                'reduce_on_plateau': False,  # For ReduceLROnPlateau scheduler, default
+                # 'interval': 'step',
                 'interval': 'epoch',
+                # need to change here
+                # 'frequency': 300
                 'frequency': 1
             }
 
-        return [optimizer], [scheduler]
+        return [optimizer], [lr_dict]
 
     def prepare_batch(self, batch):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
