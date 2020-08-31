@@ -186,9 +186,9 @@ class Lightning_Unet(pl.LightningModule):
         inputs, targets = batch["img"][DATA], batch["label"][DATA]
 
         # print the path
-        img_path, label_path = batch["img"][PATH], batch["label"][PATH]
-        print(f"img path: {img_path}")
-        print(f"label path: {label_path}")
+        # img_path, label_path = batch["img"][PATH], batch["label"][PATH]
+        # print(f"img path: {img_path}")
+        # print(f"label path: {label_path}")
 
         if torch.isnan(inputs).any():
             print("there is nan in input data!")

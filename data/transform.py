@@ -25,7 +25,10 @@ def get_train_transforms() -> Compose:
     training_transform = Compose([
         ToCanonical(),
         Resample(1),  # this might need to change
-        RescaleIntensity((0, 1)),  # so that there are no negative values for RandomMotion
+        RescaleIntensity(
+            out_min_max=(0, 1),
+            percentiles=(0.05, 99.5)  # what this used for?
+        ),  # so that there are no negative values for RandomMotion
         RandomMotion(
             degrees=10,
             translation=10,
