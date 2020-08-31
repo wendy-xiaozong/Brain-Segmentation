@@ -36,7 +36,8 @@ def read_data(mri):
     data_np = img.get_data()
     seg_np = label.get_data().squeeze()
 
-    # print(f"{data_np.dtype.type})
+    if np.isnan(data_np).any() or not np.isfinite(data_np).all():
+        raise ValueError("There is NaN or infinite data in the img!")
 
     return data_np, seg_np, img.affine, label.affine
 
@@ -50,25 +51,27 @@ if __name__ == "__main__":
     mri_list = [mri for mri in get_path(ADNI_DATASET_DIR_1)]
     print(f"totally get {len(mri_list)} MRI files!")
 
-    # for mri in tqdm(mri_list):
-    #     try:
-    #         data_np, seg_np, img_affine, label_affine = read_data(mri)
-    #     except OSError:
-    #         print(f"{mri.img_path} this file is broken!")
-    #         continue
-    #
-    #     if data_np.shape != seg_np.shape:
-    #         print(f"{mri.img_path}'s shape is not the same as it's label's shape!")
-    #         continue
-    #
-    #     # get the file name
-    #     _, filename = os.path.split(mri.img_path)
-    #     filename, _ = os.path.splitext(filename)
-    #
-    #     img_file = nib.Nifti1Image(data_np, img_affine)
-    #     nib.save(img_file, squeezed_img_folder / Path(f"{filename}.nii"))
-    #     label_file = nib.Nifti1Image(seg_np, label_affine)
-    #     nib.save(label_file, squeezed_label_folder / Path(f"{filename}.nii.gz"))
+    for mri in tqdm(mri_list):
+        try:
+            data_np, seg_np, img_affine, label_affine = read_data(mri)
+        except OSError:
+            print(f"{mri.img_path} this file is broken!")
+            continue
+        except ValueError as error:
+            print(f"{repr(error)} {mri.img_path}")
+            continue
+        if data_np.shape != seg_np.shape:
+            print(f"{mri.img_path}'s shape is not the same as it's label's shape!")
+            continue
+
+        # get the file name
+        _, filename = os.path.split(mri.img_path)
+        filename, _ = os.path.splitext(filename)
+
+        img_file = nib.Nifti1Image(data_np, img_affine)
+        nib.save(img_file, squeezed_img_folder / Path(f"{filename}.nii"))
+        label_file = nib.Nifti1Image(seg_np, label_affine)
+        nib.save(label_file, squeezed_label_folder / Path(f"{filename}.nii.gz"))
 
         # print(f"{ctime()}: Successfully save file {filename} file!")
 

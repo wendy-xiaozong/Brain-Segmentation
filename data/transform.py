@@ -27,7 +27,7 @@ def get_train_transforms() -> Compose:
         Resample(1),  # this might need to change
         RescaleIntensity(
             out_min_max=(0, 1),
-            percentiles=(0.05, 99.5)  # what this used for?
+            percentiles=(0.5, 99.5)  # what this used for?
         ),  # so that there are no negative values for RandomMotion
         RandomMotion(
             degrees=10,

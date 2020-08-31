@@ -44,6 +44,6 @@ echo -e '\n\n\n'
 #python3 /home/jueqi/scratch/Unet_seg138_13/cropping.py
 python3 /home/jueqi/scratch/seg138/3/squeeze_data.py
 
-#tar -cf /home/jueqi/scratch/Data/cropped_ADNI.tar cropped_img/ cropped_label/
+tar -cf /home/jueqi/scratch/Data/squeeze_ADNI.tar squeezed_img/ squeezed_label/
 #tar -cf /home/jueqi/scratch/Data/strange_ADNI.tar strange_img/ strange_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
