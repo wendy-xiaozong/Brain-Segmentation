@@ -234,10 +234,10 @@ class Lightning_Unet(pl.LightningModule):
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
         result = pl.TrainResult(minimize=loss)
-        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True, reduce_fx=torch.mean)
+        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True, reduce_fx=torch.mean, on_step=True,
+                   on_epoch=False)
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
         # So they would return 0 on some of the classes, making the matrixs not accurate
-
         return result
 
     # It supports only need when using DP or DDP2, I should not need it because I am using ddp
@@ -332,7 +332,7 @@ class Lightning_Unet(pl.LightningModule):
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('val_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_loss', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_specificity', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         return result
 
