@@ -92,7 +92,8 @@ class Lightning_Unet(pl.LightningModule):
     # Called at the beginning of fit and test. This is a good hook when you need to build models dynamically or
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
-        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(use_cropped_data=self.hparams.use_cropped_img)
+        self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(
+            use_cropped_data=self.hparams.use_cropped_img)
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
@@ -178,8 +179,15 @@ class Lightning_Unet(pl.LightningModule):
         # Setting up the optimizer
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
-        scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.5,
-                                      patience=4, min_lr=1e-6)
+        # need to find what other used here
+        scheduler = {
+                'scheduler': ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.5,
+                                               patience=4, min_lr=1e-6),
+                'monitor': 'val_dice',  # Default: val_loss
+                'interval': 'epoch',
+                'frequency': 1
+            }
+
         return [optimizer], [scheduler]
 
     def prepare_batch(self, batch):
@@ -233,8 +241,8 @@ class Lightning_Unet(pl.LightningModule):
     #     print(f"outputs shape: {outputs['train_step_preds'].shape}")
     #     batch_preds = torch.stack([x['train_step_preds'] for x in outputs])
     #     batch_targets = torch.stack([x['train_step_target'] for x in outputs])
-        # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
-        # dice = dice_score(pred=batch_preds, target=batch_targets, bg=True)
+    # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
+    # dice = dice_score(pred=batch_preds, target=batch_targets, bg=True)
 
     def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None, whether_to_return_img=False):
         if if_path:
@@ -330,7 +338,8 @@ class Lightning_Unet(pl.LightningModule):
         cur_label_path = self.visual_label_path_list[self.val_times % len(self.visual_label_path_list)]
 
         img, output_tensor, target_tensor = self.compute_from_aggregating(cur_img_path, cur_label_path,
-                                                                          if_path=True, type_as_tensor=validation_step_output_result)
+                                                                          if_path=True,
+                                                                          type_as_tensor=validation_step_output_result)
         # print(f"validation_epoch_end_output_tensor: {output_tensor.requires_grad}")
         # print(f"validation_epoch_end_target_tensor: {target_tensor.requires_grad}")
         output_tensor_cuda = output_tensor.type_as(validation_step_output_result['val_dice'])

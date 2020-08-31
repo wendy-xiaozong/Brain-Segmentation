@@ -26,6 +26,7 @@ def get_train_transforms() -> Compose:
         ToCanonical(),
         Resample(1),  # this might need to change
         # Do I really need this? if I use this, I would have `FloatingPointError: underflow encountered in true_divide`
+        # I don't know how to deal with it right now
         # It seems like when doing
         #     array /= array.max()  # [0, 1]
         # a very small number come out, cause it
@@ -101,7 +102,7 @@ def get_val_transform() -> Compose:
     validation_transform = Compose([
         ToCanonical(),
         Resample(1),  # this might need to change
-        RescaleIntensity((0, 1)),
+        # RescaleIntensity((0, 1)),
         ZNormalization(masking_method=ZNormalization.mean),
     ])
     return validation_transform
@@ -112,7 +113,7 @@ def get_test_transform() -> Compose:  # do not resize in there
         ToCanonical(),
         Resample(1),
         # CropOrPad(64),
-        RescaleIntensity((0, 1)),
+        # RescaleIntensity((0, 1)),
         # ToResize_only_image(),
         ZNormalization(masking_method=ZNormalization.mean),
     ])
