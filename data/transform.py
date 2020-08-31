@@ -25,10 +25,17 @@ def get_train_transforms() -> Compose:
     training_transform = Compose([
         ToCanonical(),
         Resample(1),  # this might need to change
-        RescaleIntensity(
-            out_min_max=(0, 1),
-            percentiles=(0.5, 99.5)  # what this used for?
-        ),  # so that there are no negative values for RandomMotion
+        # Do I really need this? if I use this, I would have `FloatingPointError: underflow encountered in true_divide`
+        # It seems like when doing
+        #     array /= array.max()  # [0, 1]
+        # a very small number come out, cause it
+        # very strange, because I never run into it before?
+        # nnUnet do not use it in MRI, they only use it in CT
+        # RescaleIntensity(
+        #     out_min_max=(0, 1),
+        #     percentiles=(0.5, 99.5)  # what this used for?
+        # ),
+        # so that there are no negative values for RandomMotion
         RandomMotion(
             degrees=10,
             translation=10,
