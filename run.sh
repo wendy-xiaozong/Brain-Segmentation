@@ -69,12 +69,12 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
-       --fast_dev_run \
        --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
+#       --fast_dev_run \
 #        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt"
 
 #echo "$(date +"%T"):  start tar data"

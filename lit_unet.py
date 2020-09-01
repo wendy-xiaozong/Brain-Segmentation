@@ -229,12 +229,15 @@ class Lightning_Unet(pl.LightningModule):
         # loss = F.binary_cross_entropy_with_logits(logits, targets)
         diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
         loss = diceloss.forward(input=pred, target=targets)
+        # What is the loos I need to set here? when I am using the batch size?
 
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
+        # the loss for prog_bar is not corrected, is there anything I write wrong?
         result = pl.TrainResult(minimize=loss)
-        result.log("train_loss", loss, prog_bar=False, sync_dist=True, logger=True, reduce_fx=torch.mean, on_step=True,
+        # This is corrected for the log.
+        result.log("train_loss", loss, prog_bar=True, sync_dist=True, logger=True, reduce_fx=torch.mean, on_step=True,
                    on_epoch=False)
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
         # So they would return 0 on some of the classes, making the matrixs not accurate
