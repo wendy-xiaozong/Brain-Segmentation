@@ -97,7 +97,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.99)  # using only around 25 images
+        num_training_subjects = int(num_subjects * 0.95)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
         self.test_subjects = self.subjects
