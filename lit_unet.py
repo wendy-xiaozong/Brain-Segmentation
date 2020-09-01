@@ -236,7 +236,7 @@ class Lightning_Unet(pl.LightningModule):
 
         # the loss for prog_bar is not corrected, is there anything I write wrong?
         result = pl.TrainResult(minimize=loss)
-        # This is corrected for the log.
+        # logs metrics for each training_step, to the progress bar and logger
         result.log("train_loss", loss, prog_bar=True, sync_dist=True, logger=True, reduce_fx=torch.mean, on_step=True,
                    on_epoch=False)
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
@@ -336,9 +336,9 @@ class Lightning_Unet(pl.LightningModule):
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('val_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_sensitivity', sensitivity, on_step=True, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_specificity', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_specificity', specificity, on_step=True, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         return result
 
