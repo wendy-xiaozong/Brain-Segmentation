@@ -63,7 +63,7 @@ class Lightning_Unet(pl.LightningModule):
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 10
+        self.max_queue_length = 1000
         self.patch_size = self.hparams.patch_size
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
