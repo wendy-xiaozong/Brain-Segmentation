@@ -97,7 +97,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
+        num_training_subjects = int(num_subjects * 0.99)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
         self.test_subjects = self.subjects
@@ -327,15 +327,19 @@ class Lightning_Unet(pl.LightningModule):
                                                         include_background=True)
 
         result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
-        result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        print(dice)
+        result.log('val_loss', torch.mean(loss_cuda), on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=True,
+        # why I have this error?
+        # ValueError: only one element tensors can be converted to Python scalars
+        # When I test it, I don't have it
+        result.log('val_dice', torch.mean(dice), on_step=False, on_epoch=True, logger=True, prog_bar=True,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_IoU', torch.mean(iou), on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_sensitivity', torch.mean(sensitivity), on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_specificity', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_specificity', torch.mean(specificity), on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         return result
 
