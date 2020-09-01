@@ -381,16 +381,11 @@ class Lightning_Unet(pl.LightningModule):
         self.val_times += 1
 
         # print(validation_step_output_result)
-        validation_step_output_result['val_loss'] = torch.stack(
-            [x['val_loss'] for x in validation_step_output_result]).mean()
-        validation_step_output_result['val_dice'] = torch.stack(
-            [x['val_dice'] for x in validation_step_output_result]).mean()
-        validation_step_output_result['val_IoU'] = torch.stack(
-            [x['val_IoU'] for x in validation_step_output_result]).mean()
-        validation_step_output_result['val_sensitivity'] = torch.stack(
-            [x['val_sensitivity'] for x in validation_step_output_result]).mean()
-        validation_step_output_result['val_specificity'] = torch.stack(
-            [x['val_specificity'] for x in validation_step_output_result]).mean()
+        validation_step_output_result['val_loss'] = validation_step_output_result['val_loss'].mean()
+        validation_step_output_result['val_dice'] = validation_step_output_result['val_dice'].mean()
+        validation_step_output_result['val_IoU'] = validation_step_output_result['val_IoU'].mean()
+        validation_step_output_result['val_sensitivity'] = validation_step_output_result['val_sensitivity'].mean()
+        validation_step_output_result['val_specificity'] = validation_step_output_result['val_specificity'].mean()
         return validation_step_output_result
 
     def test_step(self, batch, batch_idx):
