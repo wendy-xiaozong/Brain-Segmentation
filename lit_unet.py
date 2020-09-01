@@ -234,6 +234,7 @@ class Lightning_Unet(pl.LightningModule):
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=batch_preds, target=batch_targets)
 
+        # I cannot use this `TrainResult` right now
         # the loss for prog_bar is not corrected, is there anything I write wrong?
         result = pl.TrainResult(minimize=loss)
         # logs metrics for each training_step, to the progress bar and logger
@@ -242,6 +243,15 @@ class Lightning_Unet(pl.LightningModule):
         # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
         # So they would return 0 on some of the classes, making the matrixs not accurate
         return result
+        # return {
+        #     'loss': loss,
+        #     # we cannot compute the matrixs on the patches, because they do not contain all the 138 segmentations
+        #     # So they would return 0 on some of the classes, making the matrixs not accurate
+        #     # 'log': {'train_loss': loss, 'train_dice': dice, 'train_IoU': iou},
+        #     'log': {'train_loss': loss},
+        #     # 'progress_bar': {'train_loss': loss, 'train_dice': dice}
+        #     # 'progress_bar': {'train_loss': loss}
+        # }
 
     # It supports only need when using DP or DDP2, I should not need it because I am using ddp
     # but I have some problem with the dice score, So I am just trying ...
@@ -328,6 +338,7 @@ class Lightning_Unet(pl.LightningModule):
                                                         include_background=True)
 
         result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
+        # This need to change here!
         result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         # why I have this error?
@@ -369,6 +380,7 @@ class Lightning_Unet(pl.LightningModule):
                      self.val_times, filename=None)
         self.val_times += 1
 
+        print(validation_step_output_result)
         return validation_step_output_result
 
     def test_step(self, batch, batch_idx):
