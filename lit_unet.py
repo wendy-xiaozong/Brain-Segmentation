@@ -328,18 +328,18 @@ class Lightning_Unet(pl.LightningModule):
                                                         include_background=True)
 
         result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
-        result.log('val_loss', loss_cuda, on_step=True, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         # why I have this error?
         # ValueError: only one element tensors can be converted to Python scalars
         # When I test it, I don't have it
-        result.log('val_dice', dice, on_step=True, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_IoU', iou, on_step=True, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_sensitivity', sensitivity, on_step=True, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_sensitivity', sensitivity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        result.log('val_specificity', specificity, on_step=True, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_specificity', specificity, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         return result
 
