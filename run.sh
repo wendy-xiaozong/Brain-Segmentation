@@ -41,7 +41,7 @@ tar -xf /home/jueqi/scratch/Data/cropped_ADNI.tar -C work && echo "$(date +"%T")
 
 cd work
 
-BATCH_SIZE=4
+BATCH_SIZE=2
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
@@ -50,8 +50,8 @@ LEARNING_RATE=0.0004  # the actually learning rate is LEARING_RATE / GPUS
 KERNEL_SIZE=5
 DEEPTH=4
 PATCH_SIZE=96
-MODEL=unet
-#MODEL=highResNet
+#MODEL=unet
+MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
 RUN=49
@@ -59,7 +59,7 @@ LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/1/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/2/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
