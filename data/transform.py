@@ -37,6 +37,10 @@ def get_train_transforms() -> Compose:
         #     percentiles=(0.5, 99.5)  # what this used for?
         # ),
         # so that there are no negative values for RandomMotion
+        # this might not work if I don't use the RescaleIntensity above
+        # might be add this:
+        # HistogramStandardization({'mri': landmarks}),
+        ZNormalization(masking_method=ZNormalization.mean),  # Subtract mean and divide by standard deviation.
         RandomMotion(
             degrees=10,
             translation=10,
@@ -87,7 +91,6 @@ def get_train_transforms() -> Compose:
                 # seed=seed,
             ): 0.2,
         }),
-        ZNormalization(masking_method=ZNormalization.mean),  # Subtract mean and divide by standard deviation.
         RandomNoise(
             mean=0,
             std=(0, 0.25),

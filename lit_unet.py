@@ -63,7 +63,7 @@ class Lightning_Unet(pl.LightningModule):
 
         # torchio parameters
         # ?need to try to find the suitable value
-        self.max_queue_length = 10
+        self.max_queue_length = 1000
         self.patch_size = self.hparams.patch_size
         # Number of patches to extract from each volume. A small number of patches ensures a large variability
         # in the queue, but training will be slower.
@@ -336,14 +336,9 @@ class Lightning_Unet(pl.LightningModule):
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
-
         result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
-        # This need to change here!
         result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
-        # why I have this error?
-        # ValueError: only one element tensors can be converted to Python scalars
-        # When I test it, I don't have it
         result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('val_IoU', iou, on_step=False, on_epoch=True, logger=True, prog_bar=False,
@@ -380,7 +375,9 @@ class Lightning_Unet(pl.LightningModule):
                      self.val_times, filename=None)
         self.val_times += 1
 
-        # print(validation_step_output_result)
+        # From https://forums.pytorchlightning.ai/t/log-unreduced-results-as-histogram-with-evalresult/112/2?u=jueqi
+        # The reduce function in-built to the Result class only gets called if the epoch_end methods aren’t overridden
+        # So the only way is overriding the epoch_end method and aggregating it yourself
         validation_step_output_result['val_loss'] = validation_step_output_result['val_loss'].mean()
         validation_step_output_result['val_dice'] = validation_step_output_result['val_dice'].mean()
         validation_step_output_result['val_IoU'] = validation_step_output_result['val_IoU'].mean()
