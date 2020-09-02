@@ -74,9 +74,9 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
+       --checkpoint_file="epoch=1-val_dice=0.19784.ckpt" \
        --include_background && echo "$(date +"%T"):  Finished processing data"
 #       --fast_dev_run \
-#        --checkpoint_file="epoch=8-val_dice=0.49751.ckpt"
 
 #echo "$(date +"%T"):  start tar data"
 #tar -cf /home/jueqi/scratch/Data/cleared_ADNI.tar cropped_img/ cropped_label/
