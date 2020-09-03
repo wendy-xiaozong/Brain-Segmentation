@@ -65,9 +65,9 @@ def run_resample(batch, img_folder, label_folder) -> int:
         return 0
 
     resample_img_file = nib.Nifti1Image(img, img_affine)
-    nib.save(resample_img_file, img_folder / Path(f"{filename}"))
+    nib.save(resample_img_file, img_folder / Path(f"{filename}.nii"))
     resample_label_file = nib.Nifti1Image(label, label_affine)
-    nib.save(resample_label_file, label_folder / Path(f"{filename}.gz"))
+    nib.save(resample_label_file, label_folder / Path(f"{filename}.nii.gz"))
     return 1
 
 
