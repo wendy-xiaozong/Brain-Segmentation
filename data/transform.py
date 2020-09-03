@@ -24,7 +24,8 @@ from .custom_trans_class import ToSqueeze
 def get_train_transforms() -> Compose:
     training_transform = Compose([
         ToCanonical(),
-        Resample(1),  # this might need to change
+        # already do this in the preprocessed part and save the image
+        # Resample(1),  # this might need to change
         # Do I really need this? if I use this, I would have `FloatingPointError: underflow encountered in true_divide`
         # I don't know how to deal with it right now
         # It seems like when doing
@@ -104,7 +105,8 @@ def get_train_transforms() -> Compose:
 def get_val_transform() -> Compose:
     validation_transform = Compose([
         ToCanonical(),
-        Resample(1),  # this might need to change
+        # already do this in the preprocessed part and save the image
+        # Resample(1),  # this might need to change
         # RescaleIntensity((0, 1)),
         ZNormalization(masking_method=ZNormalization.mean),
     ])
@@ -114,7 +116,8 @@ def get_val_transform() -> Compose:
 def get_test_transform() -> Compose:  # do not resize in there
     validation_transform = Compose([
         ToCanonical(),
-        Resample(1),
+        # already do this in the preprocessed part and save the image
+        # Resample(1),
         # CropOrPad(64),
         # RescaleIntensity((0, 1)),
         # ToResize_only_image(),

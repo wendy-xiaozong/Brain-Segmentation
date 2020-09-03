@@ -1,5 +1,6 @@
 # To do
 - [ ] Need to add the loss in the validation to compare
+- [ ] Why would I have less image?
 - [ ] read other people's patch size (?), and training time, and learning rate
 - [ ] check the learning rate 
 - [ ] check what I did in the padding part

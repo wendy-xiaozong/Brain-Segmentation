@@ -30,7 +30,7 @@ mkdir work
 
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
-tar -xf /home/jueqi/scratch/Data/all_ADNI_data.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/scratch/Data/cropped_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # tar -xf /home/jueqi/scratch/Data/processed_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
@@ -42,8 +42,8 @@ cd work
 # run script
 echo -e '\n\n\n'
 #python3 /home/jueqi/scratch/Unet_seg138_13/cropping.py
-python3 /home/jueqi/scratch/seg138/3/squeeze_data.py
+python3 /home/jueqi/scratch/seg138/3/resample.py
 
-tar -cf /home/jueqi/scratch/Data/squeeze_ADNI.tar squeezed_img/ squeezed_label/
+tar -cf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar cropped_resample_img/ cropped_resample_label/
 #tar -cf /home/jueqi/scratch/Data/strange_ADNI.tar strange_img/ strange_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py

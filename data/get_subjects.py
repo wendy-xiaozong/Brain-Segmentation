@@ -6,7 +6,8 @@ from .const import *
 import torchio as tio
 from time import ctime
 from .get_path import get_path, get_1069_path
-from .const import cropped_img_folder, cropped_label_folder, DATA_ROOT, COMPUTECANADA
+from .const import cropped_img_folder, cropped_label_folder, cropped_resample_img_folder, \
+    cropped_resample_label_folder, COMPUTECANADA
 from glob import glob
 import pandas as pd
 
@@ -61,22 +62,22 @@ def get_original_subjects():
 
 
 def get_subjects(
-        use_cropped_data: True
+        use_cropped_resampled_data: True
 ):
-    if use_cropped_data:
+    if use_cropped_resampled_data:
         # using in the cropping folder
+        img_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(cropped_resample_img_folder)}/**/*.nii*", recursive=True))
+        ])
+        label_path_list = sorted([
+            Path(f) for f in sorted(glob(f"{str(cropped_resample_label_folder)}/**/*.nii.gz", recursive=True))
+        ])
+    else:
         img_path_list = sorted([
             Path(f) for f in sorted(glob(f"{str(cropped_img_folder)}/**/*.nii*", recursive=True))
         ])
         label_path_list = sorted([
             Path(f) for f in sorted(glob(f"{str(cropped_label_folder)}/**/*.nii.gz", recursive=True))
-        ])
-    else:
-        img_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(squeezed_img_folder)}/**/*.nii*", recursive=True))
-        ])
-        label_path_list = sorted([
-            Path(f) for f in sorted(glob(f"{str(squeezed_label_folder)}/**/*.nii.gz", recursive=True))
         ])
 
     # # the length is equal
