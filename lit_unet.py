@@ -77,7 +77,7 @@ class Lightning_Unet(pl.LightningModule):
             self.patch_size = 48
             self.num_workers = 8
             self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(
-                use_cropped_data=True
+                use_cropped_resampled_data=True
             )
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
@@ -93,7 +93,7 @@ class Lightning_Unet(pl.LightningModule):
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
         self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(
-            use_cropped_data=self.hparams.use_cropped_img)
+            use_cropped_resampled_data=self.hparams.use_cropped_img)
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
