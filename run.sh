@@ -36,12 +36,12 @@ mkdir work
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
 #tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
-tar -xf /home/jueqi/scratch/Data/cropped_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
 
-BATCH_SIZE=2
+BATCH_SIZE=4
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
