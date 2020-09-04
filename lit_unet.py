@@ -181,6 +181,7 @@ class Lightning_Unet(pl.LightningModule):
         # scheduler = MultiStepLR(optimizer, milestones=[1, 10], gamma=0.1)
         # need to find what other used here
         lr_dict = {
+                # this also need to fine tune
                 'scheduler': ReduceLROnPlateau(optimizer=optimizer, mode='max', factor=0.5,
                                                patience=10, min_lr=1e-6),
                 # might need to change here
@@ -320,8 +321,8 @@ class Lightning_Unet(pl.LightningModule):
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
 
-        print(f"input shape: {input.shape}")
-        print(f"target shape: {target.shape}")
+        # print(f"input shape: {input.shape}")
+        # print(f"target shape: {target.shape}")
 
         output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
 

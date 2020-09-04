@@ -51,7 +51,7 @@ KERNEL_SIZE=5
 DEEPTH=4
 PATCH_SIZE=96
 MODEL=unet
-#MODEL=highResNet
+# MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
 RUN=49
