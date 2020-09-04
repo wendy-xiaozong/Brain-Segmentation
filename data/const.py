@@ -48,6 +48,8 @@ else:
     cropped_folder = DATA_ROOT / "cropped"
     cropped_img_folder = cropped_folder / "img"
     cropped_label_folder = cropped_folder / "label"
+    cropped_resample_img_folder = DATA_ROOT / "cropped_resample_img"
+    cropped_resample_label_folder = DATA_ROOT / "cropped_resample_label"
 
 CC359_DATASET_DIR = DATA_ROOT / "CalgaryCampinas359/Original"
 CC359_LABEL_DIR = DATA_ROOT / "CalgaryCampinas359/Skull-stripping-masks/STAPLE"

@@ -263,7 +263,9 @@ class Lightning_Unet(pl.LightningModule):
     # dice, iou, _, _ = get_score(batch_preds, batch_targets, include_background=True)
     # dice = dice_score(pred=batch_preds, target=batch_targets, bg=True)
 
-    def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None, whether_to_return_img=False):
+    def compute_from_aggregating(self, input, target, if_path: bool, type_as_tensor=None, whether_to_return_img=False,
+                                 result: pl.EvalResult=None):
+        transform = get_val_transform()
         if if_path:
             cur_img_subject = torchio.Subject(
                 img=torchio.Image(input, type=torchio.INTENSITY)
@@ -271,52 +273,74 @@ class Lightning_Unet(pl.LightningModule):
             cur_label_subject = torchio.Subject(
                 img=torchio.Image(target, type=torchio.LABEL)
             )
-        else:
-            cur_img_subject = torchio.Subject(
-                img=torchio.Image(tensor=input.squeeze().cpu().detach(), type=torchio.INTENSITY)
+
+            preprocessed_img = transform(cur_img_subject)
+            preprocessed_label = transform(cur_label_subject)
+
+            patch_overlap = self.hparams.patch_overlap  # is there any constrain?
+            grid_sampler = torchio.inference.GridSampler(
+                preprocessed_img,
+                self.patch_size,
+                patch_overlap,
             )
-            cur_label_subject = torchio.Subject(
-                img=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
-            )
 
-        # This is different? why?
-        # print(f"before transform input: {cur_img_subject.img.data.shape}")
-        # print(f"before transform label: {cur_label_subject.img.data.shape}")
+            patch_loader = torch.utils.data.DataLoader(grid_sampler)
+            aggregator = torchio.inference.GridAggregator(grid_sampler)
 
-        transform = get_val_transform()
-        preprocessed_img = transform(cur_img_subject)
-        preprocessed_label = transform(cur_label_subject)
-
-        # print(f"after transform input: {preprocessed_img.img.data.shape}")
-        # print(f"after transform label: {preprocessed_label.img.data.shape}")
-
-        patch_overlap = self.hparams.patch_overlap  # is there any constrain?
-        grid_sampler = torchio.inference.GridSampler(
-            preprocessed_img,
-            self.patch_size,
-            patch_overlap,
-        )
-
-        patch_loader = torch.utils.data.DataLoader(grid_sampler)
-        aggregator = torchio.inference.GridAggregator(grid_sampler)
-
-        for patches_batch in patch_loader:
-            input_tensor = patches_batch['img'][torchio.DATA]
-            # used to convert tensor to CUDA
-            if not if_path:
-                input_tensor = input_tensor.type_as(input)
-            else:
+            for patches_batch in patch_loader:
+                input_tensor = patches_batch['img'][torchio.DATA]
+                # used to convert tensor to CUDA
                 input_tensor = input_tensor.type_as(type_as_tensor['val_dice'])
-            locations = patches_batch[torchio.LOCATION]
-            preds = self(input_tensor)  # use cuda
-            labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
-            aggregator.add_batch(labels, locations)
-        output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
+                locations = patches_batch[torchio.LOCATION]
+                preds = self(input_tensor)  # use cuda
+                labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
+                aggregator.add_batch(labels, locations)
+            output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
 
-        if if_path or whether_to_return_img:
-            return preprocessed_img.img.data, output_tensor, preprocessed_label.img.data
+            if if_path or whether_to_return_img:
+                return preprocessed_img.img.data, output_tensor, preprocessed_label.img.data
+            else:
+                return output_tensor, preprocessed_label.img.data
+
         else:
-            return output_tensor, preprocessed_label.img.data
+            cur_subject = torchio.Subject(
+                img=torchio.Image(tensor=input.squeeze().cpu().detach(), type=torchio.INTENSITY),
+                label=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
+            )
+            preprocessed_subject = transform(cur_subject)
+
+            patch_overlap = self.hparams.patch_overlap  # is there any constrain?
+            grid_sampler = torchio.inference.GridSampler(
+                preprocessed_subject,
+                self.patch_size,
+                patch_overlap,
+            )
+
+            patch_loader = torch.utils.data.DataLoader(grid_sampler)
+            aggregator = torchio.inference.GridAggregator(grid_sampler)
+
+            dice_loss = torch.tensor([])
+
+            for patches_batch in patch_loader:
+                input_tensor, target_tensor = patches_batch['img'][torchio.DATA], patches_batch['label'][torchio.DATA]
+                # used to convert tensor to CUDA
+                input_tensor = input_tensor.type_as(input)
+                locations = patches_batch[torchio.LOCATION]
+                preds_tensor = self(input_tensor)  # use cuda
+                # Compute the loss here
+                diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
+                loss = diceloss.forward(input=preds_tensor.unsqueeze(dim=1), target=target_tensor.unsqueeze(dim=1))
+                dice_loss = torch.cat((dice_loss, loss), dim=0)
+                labels = preds_tensor.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
+                aggregator.add_batch(labels, locations)
+            output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
+
+            if whether_to_return_img:
+                return cur_subject['img'].data, output_tensor, cur_subject['label'].data
+            else:
+                return output_tensor, cur_subject['label'].data, dice_loss
+
+
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
@@ -324,25 +348,22 @@ class Lightning_Unet(pl.LightningModule):
         # print(f"input shape: {input.shape}")
         # print(f"target shape: {target.shape}")
 
-        output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
+        output_tensor, target_tensor, dice_loss = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
 
         # pred = self(inputs)
         # gdloss = GeneralizedDiceLoss(include_background=True, to_onehot_y=True)
         # loss = gdloss.forward(input=probs, target=targets)
 
-        diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
         output_tensor = to_onehot(output_tensor, num_classes=139)
-        loss = diceloss.forward(input=output_tensor, target=target_tensor.unsqueeze(dim=1))  # all in CPU
-        loss_cuda = loss.type_as(input)
         output_tensor_cuda = output_tensor.type_as(input)
         target_tensor_cuda = target_tensor.type_as(input)
-        del output_tensor, target_tensor, loss, input, target
+        del output_tensor, target_tensor, input, target
         # dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
         #                                                 include_background=True, reduction=LossReduction.NONE)
         dice, iou, sensitivity, specificity = get_score(output_tensor_cuda, target_tensor_cuda,
                                                         include_background=True)
         result = pl.EvalResult(early_stop_on=dice, checkpoint_on=dice)
-        result.log('val_loss', loss_cuda, on_step=False, on_epoch=True, logger=True, prog_bar=False,
+        result.log('val_loss', dice_loss.mean(), on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)
         result.log('val_dice', dice, on_step=False, on_epoch=True, logger=True, prog_bar=False,
                    reduce_fx=torch.mean, sync_dist=True)

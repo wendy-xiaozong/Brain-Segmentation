@@ -13,6 +13,7 @@ import random
 import numpy as np
 
 
+# cannot use right now need to change
 class CheckpointEveryValidationEpochEnd(pl.Callback):
     """
     Save a checkpoint every validation epoch end.
@@ -113,7 +114,7 @@ def main(hparams):
         logger=tb_logger,
         max_epochs=10000,
         # this need to be string
-        resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
+        # resume_from_checkpoint=str(Path(__file__).resolve().parent / "checkpoint" / hparams.checkpoint_file),
         profiler=True,
         auto_lr_find=False,
         # simulate a larger batch size for gradient descent to provide a good estimate
