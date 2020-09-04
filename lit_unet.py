@@ -82,7 +82,7 @@ class Lightning_Unet(pl.LightningModule):
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
             num_subjects = len(self.subjects)
-            num_training_subjects = int(num_subjects * 0.995)  # using only around 25 images
+            num_training_subjects = int(num_subjects * 0.95)  # using only around 25 images
             self.training_subjects = self.subjects[:num_training_subjects]
             self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -319,6 +319,10 @@ class Lightning_Unet(pl.LightningModule):
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
+
+        print(f"input shape: {input.shape}")
+        print(f"target shape: {target.shape}")
+
         output_tensor, target_tensor = self.compute_from_aggregating(input, target, if_path=False)  # in CPU
 
         # pred = self(inputs)

@@ -58,7 +58,7 @@ def run_resample(batch, img_folder, label_folder) -> int:
         img, label, img_affine, label_affine = get_numpy_affine(batch)
     except OSError:
         print("OSError! skip file!")
-        return
+        return 0
 
     if img.shape != label.shape:
         print(f"the image: {filename} \n shape {img.shape} is not equal to the label shape {label.shape}")
