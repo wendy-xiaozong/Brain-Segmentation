@@ -189,7 +189,7 @@ class BrainSlices:
         # need to change here
         # 160 is a random number
         gs = gridspec.GridSpec(nrows, ncols,
-                               height_ratios=[self.shape[1] / 160, 1, 1])
+                               height_ratios=[self.shape[1] / 160, 5, 5])
 
         for i in range(0, 3):
             ax1 = plt.subplot(gs[i * 3])
