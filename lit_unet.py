@@ -319,7 +319,7 @@ class Lightning_Unet(pl.LightningModule):
             patch_loader = torch.utils.data.DataLoader(grid_sampler)
             aggregator = torchio.inference.GridAggregator(grid_sampler)
 
-            dice_loss = torch.tensor([]).type_as(input)
+            dice_loss =[]
 
             for patches_batch in patch_loader:
                 input_tensor, target_tensor = patches_batch['img'][torchio.DATA], patches_batch['label'][torchio.DATA]
@@ -330,7 +330,7 @@ class Lightning_Unet(pl.LightningModule):
                 # Compute the loss here
                 diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
                 loss = diceloss.forward(input=preds_tensor, target=target_tensor)
-                dice_loss = torch.stack([dice_loss, loss], dim=0)
+                dice_loss.append(loss)
                 labels = preds_tensor.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
                 aggregator.add_batch(labels, locations)
             output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
@@ -338,7 +338,7 @@ class Lightning_Unet(pl.LightningModule):
             if whether_to_return_img:
                 return cur_subject['img'].data, output_tensor, cur_subject['label'].data
             else:
-                return output_tensor, cur_subject['label'].data, dice_loss
+                return output_tensor, cur_subject['label'].data, torch.stack(dice_loss)
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)

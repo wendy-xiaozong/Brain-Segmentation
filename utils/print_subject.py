@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     a = torch.tensor([])
     b = torch.tensor([1.0])
-    a = torch.cat((a, b), dim=0)
+    a = torch.stack((a, b), dim=0)
     print(f"a: {a}")
 
     # # the batch_size here only could be 1 because we only could handle one image to aggregate
