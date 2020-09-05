@@ -304,8 +304,8 @@ class Lightning_Unet(pl.LightningModule):
 
         else:
             cur_subject = torchio.Subject(
-                img=torchio.Image(tensor=input.squeeze().cpu().detach(), type=torchio.INTENSITY),
-                label=torchio.Image(tensor=target.squeeze().cpu().detach(), type=torchio.LABEL)
+                img=torchio.Image(tensor=input.squeeze(), type=torchio.INTENSITY),
+                label=torchio.Image(tensor=target.squeeze(), type=torchio.LABEL)
             )
             preprocessed_subject = transform(cur_subject)
 
@@ -339,8 +339,6 @@ class Lightning_Unet(pl.LightningModule):
                 return cur_subject['img'].data, output_tensor, cur_subject['label'].data
             else:
                 return output_tensor, cur_subject['label'].data, dice_loss
-
-
 
     def validation_step(self, batch, batch_id):
         input, target = self.prepare_batch(batch)
