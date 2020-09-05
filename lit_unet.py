@@ -319,7 +319,7 @@ class Lightning_Unet(pl.LightningModule):
             patch_loader = torch.utils.data.DataLoader(grid_sampler)
             aggregator = torchio.inference.GridAggregator(grid_sampler)
 
-            dice_loss = torch.tensor([])
+            dice_loss = torch.tensor([]).type_as(input)
 
             for patches_batch in patch_loader:
                 input_tensor, target_tensor = patches_batch['img'][torchio.DATA], patches_batch['label'][torchio.DATA]
