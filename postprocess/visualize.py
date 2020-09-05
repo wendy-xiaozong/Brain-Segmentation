@@ -185,7 +185,7 @@ class BrainSlices:
     def plot(self) -> Figure:
         nrows, ncols = 3, 3  # one row for each slice position
 
-        fig = plt.figure(figsize=(15, 25))
+        fig = plt.figure(figsize=(75, 25))
         # need to change here
         # 160 is a random number
         gs = gridspec.GridSpec(nrows, ncols,

@@ -59,7 +59,7 @@ LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/1/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/5/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
@@ -73,9 +73,9 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
+       --fast_dev_run \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
-#       --fast_dev_run \
 #       --checkpoint_file="epoch=1-val_dice=0.19784.ckpt" \
 
 #echo "$(date +"%T"):  start tar data"
