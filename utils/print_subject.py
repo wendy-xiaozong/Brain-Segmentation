@@ -30,8 +30,8 @@ if __name__ == "__main__":
 
     a = torch.tensor([])
     b = torch.tensor([1.0])
-    ab = torch.cat((a, b), 0)
-    print(f"ab: {ab}")
+    a = torch.cat((a, b), dim=0)
+    print(f"a: {a}")
 
     # # the batch_size here only could be 1 because we only could handle one image to aggregate
     # test_loader = DataLoader(test_imageDataset, batch_size=1)

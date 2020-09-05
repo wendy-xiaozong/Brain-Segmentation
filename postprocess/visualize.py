@@ -1,4 +1,4 @@
-"""Some code is from:
+"""Some code is borrowed and adapted from:
 https://github.com/DM-Berger/unet-learn/blob/6dc108a9a6f49c6d6a50cd29d30eac4f7275582e/src/lightning/log.py
 https://github.com/fepegar/miccai-educational-challenge-2019/blob/master/visualization.py
 """
@@ -27,6 +27,7 @@ import pandas as pd
 import matplotlib.gridspec as gridspec
 
 import sys
+
 sys.path.append('../data/')
 from data.const import colors_path
 
@@ -110,6 +111,7 @@ class ColorTable:
         return rgb
 
 
+# what this function doing?
 def turn(array_2d: np.ndarray) -> np.ndarray:
     return np.flipud(np.rot90(array_2d))
 
@@ -169,9 +171,15 @@ class BrainSlices:
             k: int
     ):
         return [
-            input[i, ...],
-            input[:, j, ...],
-            input[:, :, k, ...],
+            (input[i // 2, ...],
+             input[i, ...],
+             input[i + i // 2, ...]),
+            (input[:, j // 2, ...],
+             input[:, j, ...],
+             input[:, j + j // 2, ...]),
+            (input[:, :, k // 2, ...],
+             input[:, :, k, ...],
+             input[:, :, k + k // 2, ...])
         ]
 
     def plot(self) -> Figure:
@@ -180,12 +188,13 @@ class BrainSlices:
         fig = plt.figure(figsize=(15, 25))
         # need to change here
         # 160 is a random number
-        gs = gridspec.GridSpec(nrows, ncols, height_ratios=[self.shape[1] / 160, 1, 1])
+        gs = gridspec.GridSpec(nrows, ncols,
+                               height_ratios=[self.shape[1] / 16, 1, 1])
 
         for i in range(0, 3):
-            ax1 = plt.subplot(gs[i*3])
-            ax2 = plt.subplot(gs[i*3 + 1])
-            ax3 = plt.subplot(gs[i*3 + 2])
+            ax1 = plt.subplot(gs[i * 3])
+            ax2 = plt.subplot(gs[i * 3 + 1])
+            ax3 = plt.subplot(gs[i * 3 + 2])
             axes = ax1, ax2, ax3
             self.plot_row(self.slices[i], axes, self.title[i], i)
 
@@ -200,10 +209,11 @@ class BrainSlices:
             row_num: int,
     ) -> None:
         for (slice_, axis) in zip(slices, axes):
+            imgs = [turn(img) for img in slice_]
             if row_num == 0:
-                axis.imshow(turn(slice_), cmap="bone", alpha=0.8)
+                axis.imshow(imgs, cmap="bone", alpha=0.8)
             else:
-                axis.imshow(turn(slice_))
+                axis.imshow(imgs)
             axis.grid(False)
             axis.invert_xaxis()
             axis.invert_yaxis()
@@ -333,7 +343,7 @@ class BrainSlices:
                 #     print("Saving... {:2.1f}%".format(100 * current_frame / total_frames))
 
             # writervideo = animation.FFMpegWriter(fps=60)
-            ani.save(outfile, codec="h264", dpi=dpi, progress_callback = prog_logger)
+            ani.save(outfile, codec="h264", dpi=dpi, progress_callback=prog_logger)
             # ani.save(outfile, progress_callback=prog_logger, writer=writervideo)
             pbar.close()
 

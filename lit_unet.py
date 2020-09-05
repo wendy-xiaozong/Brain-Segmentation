@@ -330,7 +330,7 @@ class Lightning_Unet(pl.LightningModule):
                 # Compute the loss here
                 diceloss = DiceLoss(include_background=self.hparams.include_background, to_onehot_y=True)
                 loss = diceloss.forward(input=preds_tensor, target=target_tensor)
-                dice_loss = torch.cat((dice_loss, loss), dim=0)
+                dice_loss = torch.stack([dice_loss, loss], dim=0)
                 labels = preds_tensor.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
                 aggregator.add_batch(labels, locations)
             output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
