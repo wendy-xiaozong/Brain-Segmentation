@@ -69,11 +69,11 @@ def get_train_transforms() -> Compose:
             # seed=seed,
         ),
         # whether I need this?
-        RandomFlip(
-            axes=(0, 1, 2),
-            p=0.5,
-            # seed=seed,
-        ),  # this probability might need to tune
+        # RandomFlip(
+        #     axes=(0, 1, 2),
+        #     p=0.5,
+        #     # seed=seed,
+        # ),  # this probability might need to tune
         RandomGhosting(
             num_ghosts=(2, 10),
             intensity=(0.5, 1),
