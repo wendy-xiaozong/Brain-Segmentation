@@ -295,7 +295,7 @@ class Lightning_Unet(pl.LightningModule):
                 preds = self(input_tensor)  # use cuda
                 labels = preds.argmax(dim=torchio.CHANNELS_DIMENSION, keepdim=True)  # use cuda
                 aggregator.add_batch(labels, locations)
-            output_tensor = aggregator.get_output_tensor()  # not using cuda!!!!
+            output_tensor = aggregator.get_output_tensor()  # not using cuda!
 
             if if_path or whether_to_return_img:
                 return preprocessed_img.img.data, output_tensor, preprocessed_label.img.data

@@ -210,6 +210,7 @@ class BrainSlices:
     ) -> None:
         for (slice_, axis) in zip(slices, axes):
             imgs = [turn(img) for img in slice_]
+            imgs = np.concatenate(imgs, axis=1)
             if row_num == 0:
                 axis.imshow(imgs, cmap="bone", alpha=0.8)
             else:
