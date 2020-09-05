@@ -50,11 +50,11 @@ LEARNING_RATE=0.0004  # the actually learning rate is LEARING_RATE / GPUS
 KERNEL_SIZE=5
 DEEPTH=4
 PATCH_SIZE=96
-MODEL=unet
-# MODEL=highResNet
+# MODEL=unet
+MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=53
+RUN=54
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
