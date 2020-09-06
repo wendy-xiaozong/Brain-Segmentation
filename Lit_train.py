@@ -13,32 +13,6 @@ import random
 import numpy as np
 
 
-# cannot use right now need to change
-class CheckpointEveryValidationEpochEnd(pl.Callback):
-    """
-    Save a checkpoint every validation epoch end.
-    """
-    def __init__(
-        self,
-        use_modelcheckpoint_filename=True,
-    ):
-        """
-        Args:
-            save_step_frequency: how often to save in steps
-            prefix: add a prefix to the name, only used if
-                use_modelcheckpoint_filename=False
-            use_modelcheckpoint_filename: just use the ModelCheckpoint callback's
-                default filename, don't use ours.
-        """
-        self.use_modelcheckpoint_filename = use_modelcheckpoint_filename
-
-    def on_validation_epoch_end(self, trainer, pl_module):
-        """ Check if we should save a checkpoint after every train batch """
-        filename = trainer.checkpoint_callback.filename
-        ckpt_path = os.path.join(trainer.checkpoint_callback.dirpath, filename)
-        trainer.save_checkpoint(ckpt_path)
-
-
 def main(hparams):
     """
     Trains the Lightning model as specified in `hparams`
@@ -80,7 +54,8 @@ def main(hparams):
         mode='max',
         prefix='',
         save_weights_only=False,
-        period=1,
+        # could realize to save the checkpoint several times in one epoch
+        period=-1,
     )
 
     early_stop_callback = EarlyStopping(
@@ -107,7 +82,7 @@ def main(hparams):
         log_save_interval=2,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
-        callbacks=[LearningRateLogger(), CheckpointEveryValidationEpochEnd()],
+        callbacks=[LearningRateLogger()],
         # runs 1 train, val, test  batch and program ends
         fast_dev_run=hparams.fast_dev_run,
         default_root_dir=default_root_dir,

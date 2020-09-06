@@ -4,7 +4,7 @@ from torchio import DATA, PATH
 
 from torch.utils.data import DataLoader
 from data.get_subjects import get_subjects
-from data.transform import get_val_transform
+from data.transform import get_val_transform, get_train_transforms
 
 
 if __name__ == "__main__":
@@ -22,16 +22,24 @@ if __name__ == "__main__":
     #     shuffle_patches=True,
     #     verbose=True,
     # )
-    # val_transform = get_val_transform()
-    # subject = val_transform(cur_subject)
+    train_min, train_max, val_min, val_max = 0, 0, 0, 0
+    for i in range(100):
+        train_transform = get_train_transforms()
+        train_subject = train_transform(cur_subject)
+        val_transform = get_val_transform()
+        val_subject = val_transform(cur_subject)
+
+        train_max += train_subject['img'].data.max()
+        train_min += train_subject['img'].data.min()
+        val_max += val_subject['img'].data.max()
+        val_min += val_subject['img'].data.min()
+
     # print(f"img: {subject['img'].data}")
     # print(f"type: {type(subject['img'].data)}")
     # print(f"label: {subject['label'].data}")
 
-    a = torch.tensor([])
-    b = torch.tensor([1.0])
-    a = torch.stack((a, b), dim=0)
-    print(f"a: {a}")
+    print(f"train img range: [{train_min / 100}, {train_max / 100}]")
+    print(f"val img range: [{val_min / 100}, {train_max / 100}]")
 
     # # the batch_size here only could be 1 because we only could handle one image to aggregate
     # test_loader = DataLoader(test_imageDataset, batch_size=1)
