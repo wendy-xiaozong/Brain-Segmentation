@@ -55,6 +55,7 @@ class Lightning_Unet(pl.LightningModule):
                 dropout=0
             )
         elif self.hparams.model == 'ResUnet':
+            self.module_type = 'ResUnet'
             self.unet = UNet(
                 in_channels=1,
                 out_classes=self.out_classes,

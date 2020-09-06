@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=32  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=192000M  # memory
 #SBATCH --output=seg138-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=00-12:00      # time (DD-HH:MM)
+#SBATCH --time=01-00:00      # time (DD-HH:MM)
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send emailS
 #SBATCH --mail-type=ALL
 
@@ -74,9 +74,9 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
-       --fast_dev_run \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
+#       --fast_dev_run \
 #       --checkpoint_file="epoch=1-val_dice=0.19784.ckpt" \
 
 #echo "$(date +"%T"):  start tar data"
