@@ -54,6 +54,18 @@ class Lightning_Unet(pl.LightningModule):
                 downsampling_type=self.downsampling_type,
                 dropout=0
             )
+        elif self.hparams.model == 'ResUnet':
+            self.unet = UNet(
+                in_channels=1,
+                out_classes=self.out_classes,
+                num_encoding_blocks=self.deepth,
+                out_channels_first_layer=self.hparams.out_channels_first_layer,
+                kernal_size=self.kernel_size,
+                normalization=self.normalization,
+                module_type=self.module_type,
+                downsampling_type=self.downsampling_type,
+                dropout=0
+            )
         elif self.hparams.model == "highResNet":
             self.unet = HighResNet(
                 in_channels=1,

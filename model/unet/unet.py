@@ -35,6 +35,7 @@ class UNet(nn.Module):
         depth = num_encoding_blocks  # 3
 
         # Force padding if residual blocks
+        # Why this???? How this do?
         if residual:
             padding = 1
 
