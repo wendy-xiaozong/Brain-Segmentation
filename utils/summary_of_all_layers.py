@@ -11,7 +11,7 @@ class MyUnetModel(pl.LightningModule):
         self.example_input_array = torch.zeros(1, 1, 96, 96, 96)
 
         self.out_classes = 139
-        self.deepth = 4
+        self.deepth = 3
         self.kernal_size = 5  # whether this affect the model to learn?
         self.module_type = 'Unet'
         self.downsampling_type = 'max'
