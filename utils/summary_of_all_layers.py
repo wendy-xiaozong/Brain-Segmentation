@@ -52,6 +52,6 @@ if __name__ == "__main__":
     print("myUnet Model:")
     print(ModelSummary(myUnet, mode="full"))
 
-    highResNet = HighResNetModel()
-    print("highResNet Model:")
-    print(ModelSummary(highResNet, mode="full"))
+    # highResNet = HighResNetModel()
+    # print("highResNet Model:")
+    # print(ModelSummary(highResNet, mode="full"))

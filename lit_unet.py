@@ -39,10 +39,9 @@ class Lightning_Unet(pl.LightningModule):
         self.out_classes = 139
         self.deepth = self.hparams.deepth
         self.kernel_size = self.hparams.kernel_size
-        self.module_type = 'Unet'
         self.downsampling_type = 'max'
         self.normalization = 'InstanceNorm3d'
-        if self.hparams.model == "unet":
+        if self.hparams.model == "Unet" or self.hparams.model == "ResUnet":
             self.unet = UNet(
                 in_channels=1,
                 out_classes=self.out_classes,
@@ -50,20 +49,7 @@ class Lightning_Unet(pl.LightningModule):
                 out_channels_first_layer=self.hparams.out_channels_first_layer,
                 kernal_size=self.kernel_size,
                 normalization=self.normalization,
-                module_type=self.module_type,
-                downsampling_type=self.downsampling_type,
-                dropout=0
-            )
-        elif self.hparams.model == 'ResUnet':
-            self.module_type = 'ResUnet'
-            self.unet = UNet(
-                in_channels=1,
-                out_classes=self.out_classes,
-                num_encoding_blocks=self.deepth,
-                out_channels_first_layer=self.hparams.out_channels_first_layer,
-                kernal_size=self.kernel_size,
-                normalization=self.normalization,
-                module_type=self.module_type,
+                module_type=self.hparams.model,
                 downsampling_type=self.downsampling_type,
                 dropout=0
             )

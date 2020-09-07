@@ -45,22 +45,22 @@ BATCH_SIZE=4
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
-#LEARNING_RATE=1e-4
-LEARNING_RATE=0.0004  # the actually learning rate is LEARING_RATE / GPUS
+LEARNING_RATE=4e-2  # identical in the highResNet Paper
+#LEARNING_RATE=0.0004  # the actually learning rate for pytorch-lightning when using ddp is LEARING_RATE / GPUS
 KERNEL_SIZE=5
-DEEPTH=4
+DEEPTH=3
 PATCH_SIZE=96
-MODEL=ResUnet
-# MODEL=unet
-#MODEL=highResNet
+# MODEL=ResUnet
+# MODEL=Unet
+MODEL=highResNet
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=55
+RUN=57
 LOG_DIR=/home/jueqi/scratch/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/1/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/5/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
