@@ -15,6 +15,8 @@ from postprocess.visualize import log_all_info
 from torch import Tensor
 from time import ctime
 from monai.losses import DiceLoss
+# from monai.networks.nets import SegResNet, UNet, VNet
+from monai.networks.nets import UNet as monai_UNet
 # from utils.gpu_mem_track import MemTracker
 import torchio
 import torch
@@ -59,7 +61,28 @@ class Lightning_Unet(pl.LightningModule):
                 out_channels=self.out_classes,
                 dimensions=3
             )
-
+        # elif self.hparams.model == "SegResnet":
+        #     self.unet = SegResNet(spatial_dims=3,
+        #                           init_filters=32,  # ?
+        #                           in_channels=1,
+        #                           out_channels=self.out_classes,
+        #                           norm_name='group')
+        # elif self.hparams.model == "SegResnetVAE":
+        #     self.unet = SegResNetVAE(input_image_size=[96, 96, 96],
+        #                           spatial_dims=3,
+        #                           init_filters=32,  # ?
+        #                           in_channels=1,
+        #                           out_channels=self.out_classes,
+        #                           norm_name='group',
+        #                           use_vae=True,
+        #                           vae_estimate_std=True)  # ?
+        elif self.hparams.model == "monai_UNet":
+            self.unet = monai_UNet(
+                dimensions=3,
+                in_channels=1,
+                out_channels=139,
+                channels=[]
+            )
         # torchio parameters
         # ?need to try to find the suitable value
         if hparams.fast_dev_run:

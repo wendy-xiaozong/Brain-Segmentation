@@ -8,7 +8,7 @@ from model.highResNet.highresnet import HighResNet
 class MyUnetModel(pl.LightningModule):
     def __init__(self):
         super().__init__()
-        self.example_input_array = torch.zeros(1, 1, 96, 96, 96)
+        self.example_input_array = torch.zeros(1, 1, 128, 128, 128)
 
         self.out_classes = 139
         self.deepth = 3
