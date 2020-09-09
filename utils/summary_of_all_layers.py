@@ -1,7 +1,8 @@
 import pytorch_lightning as pl
 from pytorch_lightning.core.memory import ModelSummary
+from monai.networks.nets import UNet
 import torch
-from model.unet.unet import UNet
+# from model.unet.unet import UNet
 from model.highResNet.highresnet import HighResNet
 
 
@@ -17,16 +18,26 @@ class MyUnetModel(pl.LightningModule):
         self.downsampling_type = 'max'
         self.normalization = 'InstanceNorm3d'
         self.unet = UNet(
+            dimensions=3,
             in_channels=1,
-            out_classes=self.out_classes,
-            num_encoding_blocks=self.deepth,
-            out_channels_first_layer=32,
-            kernal_size=self.kernal_size,
-            normalization=self.normalization,
-            module_type=self.module_type,
-            downsampling_type=self.downsampling_type,
-            dropout=0,
+            out_channels=139,
+            channels=[],
+            strides=[],
+            kernel_size=3,
+            up_kernel_size=3,
+            num_res_units=0,
         )
+        # self.unet = UNet(
+        #     in_channels=1,
+        #     out_classes=self.out_classes,
+        #     num_encoding_blocks=self.deepth,
+        #     out_channels_first_layer=32,
+        #     kernal_size=self.kernal_size,
+        #     normalization=self.normalization,
+        #     module_type=self.module_type,
+        #     downsampling_type=self.downsampling_type,
+        #     dropout=0,
+        # )
 
     def forward(self, x):
         return self.unet(x)

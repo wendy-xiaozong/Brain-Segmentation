@@ -32,7 +32,7 @@ import pickle
 import nibabel as nib
 from time import ctime
 from tqdm import tqdm
-from data.get_subjects import get_processed_subjects
+from data.get_subjects import get_subjects
 from torch.utils.data import DataLoader
 
 from torchio import DATA, AFFINE
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
     idx = 0
 
-    subjects, visual_img_path_list, visual_label_path_list = get_processed_subjects()
+    subjects, visual_img_path_list, visual_label_path_list = get_subjects()
 
     transform = pre_transform()
     image_dataset = tio.ImagesDataset(subjects, transform=transform)
