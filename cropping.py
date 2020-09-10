@@ -19,28 +19,25 @@ https://github.com/DM-Berger/autocrop/blob/dec40a194f3ace2d024fd24d8faa503945821
 import os
 import numpy as np
 import shutil
-from pathlib import Path
 from multiprocessing import Pool
 from collections import OrderedDict
-from sklearn.cluster import KMeans, MiniBatchKMeans
-from data.const import COMPUTECANADA, cropped_img_folder, cropped_label_folder
+from pathlib import Path
 from glob import glob
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import pickle
+from tqdm import tqdm
 import nibabel as nib
 from time import ctime
-from tqdm import tqdm
-from data.get_subjects import get_processed_subjects
-from torch.utils.data import DataLoader
-
-from torchio import DATA, AFFINE
-import torchio as tio
-from torchio.transforms import (
-    Resample,
-    Compose
-)
-
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from data.get_path import get_path
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from data.const import (COMPUTECANADA,
+                        DATA_ROOT,
+                        ADNI_DATASET_DIR_1,
+                        strange_img_folder,
+                        strange_label_folder,
+                        cropped_img_folder,
+                        cropped_label_folder)
 
 # have similar outcome to the kmeans, but kmeans have dramtically better result on some images
 def create_nonzero_mask_percentile_80(data):
@@ -112,23 +109,24 @@ def crop_to_nonzero(data, seg):
     return data, seg
 
 
-def get_numpy_affine(batch):
-    img_np, label_np = batch["img"][DATA].squeeze().numpy(), batch["label"][DATA].squeeze().numpy()
-    img_affine, label_affine = batch["img"][AFFINE].squeeze().numpy(), batch["label"][AFFINE].squeeze().numpy()
-    return img_np, label_np, img_affine, label_affine
+def crop_from_file(img_path, label_path):
+    img, label = nib.load(img_path, mmap=False), nib.load(label_path, mmap=False)
+    data_np, seg_npy = img.get_data(), label.get_data().squeeze()
+
+    if np.isnan(data_np).any() or not np.isfinite(data_np).all():
+        raise ValueError("There is NaN or infinite data in the img!")
+
+    return data_np, seg_npy, img.affine, label.affine
 
 
 def show_save_img_and_label(img_2D, label_2D, bbox_percentile_80, bbox_kmeans, path, idx):
     img_2D = np.where(label_2D > 0.5, np.max(img_2D), img_2D)
     plt.imshow(img_2D)
     current_axis = plt.gca()
-    rect1 = patches.Rectangle((bbox_percentile_80[1][0], bbox_percentile_80[0][0]),
-                              (bbox_percentile_80[1][1] - bbox_percentile_80[1][0]),
-                              (bbox_percentile_80[0][1] - bbox_percentile_80[0][0]),
-                              linewidth=1, edgecolor='r', facecolor='none')
-    rect2 = patches.Rectangle((bbox_kmeans[1][0], bbox_kmeans[0][0]), (bbox_kmeans[1][1] - bbox_kmeans[1][0]),
-                              (bbox_kmeans[0][1] - bbox_kmeans[0][0]),
-                              linewidth=1, edgecolor='b', facecolor='none')
+    rect1 = patches.Rectangle((bbox_percentile_80[1][0], bbox_percentile_80[0][0]), (bbox_percentile_80[1][1] - bbox_percentile_80[1][0]), (bbox_percentile_80[0][1] - bbox_percentile_80[0][0]),
+                             linewidth=1, edgecolor='r', facecolor='none')
+    rect2 = patches.Rectangle((bbox_kmeans[1][0], bbox_kmeans[0][0]), (bbox_kmeans[1][1] - bbox_kmeans[1][0]), (bbox_kmeans[0][1] - bbox_kmeans[0][0]),
+                             linewidth=1, edgecolor='b', facecolor='none')
     current_axis.add_patch(rect1)
     current_axis.add_patch(rect2)
     plt.savefig(f"{path}/{idx}.png")
@@ -144,34 +142,29 @@ def get_2D_image(img):
     return img[:, :, img.shape[2] // 2]
 
 
-def run_crop(batch, img_folder, label_folder) -> int:
+def run_crop(img_path, label_path, img_folder, label_folder):
     # get the file name
-    _, filename = os.path.split(batch["img"]['path'][0])
+    _, filename = os.path.split(img_path)
     filename, _ = os.path.splitext(filename)
 
+    print(f"{ctime()}: Start processing {filename} ...")
     try:
-        img, label, img_affine, label_affine = get_numpy_affine(batch)
+        img, label, img_affine, label_affine = crop_from_file(img_path, label_path)
     except OSError:
         print("OSError! skip file!")
         return
-
-    if img.shape != label.shape:
-        print(f"the image: {filename} \n shape {img.shape} is not equal to the label shape {label.shape}")
-        return 0
+    except ValueError as error:
+        print(f"{repr(error)}")
+        os.system(f"mv {img_path} {strange_img_folder}")
+        os.system(f"mv {label_path} {strange_label_folder}")
+        return
 
     cropped_img, cropped_label = crop_to_nonzero(img, label)
     cropped_img_file = nib.Nifti1Image(cropped_img, img_affine)
-    nib.save(cropped_img_file, img_folder / Path(f"{filename}.gz"))
+    nib.save(cropped_img_file, img_folder / Path(f"{filename}.nii"))
     cropped_label_file = nib.Nifti1Image(cropped_label, label_affine)
-    nib.save(cropped_label_file, label_folder / Path(f"{filename}.gz"))
-    return 1
-
-
-def pre_transform() -> Compose:
-    transform = Compose([
-        Resample(1.0),
-    ])
-    return transform
+    nib.save(cropped_label_file, label_folder / Path(f"{filename}.nii.gz"))
+    print(f"{ctime()}: Successfully save file {filename} file!")
 
 
 if __name__ == "__main__":
@@ -179,24 +172,41 @@ if __name__ == "__main__":
         os.mkdir(cropped_img_folder)
     if not os.path.exists(cropped_label_folder):
         os.mkdir(cropped_label_folder)
+    if not os.path.exists(strange_img_folder):
+        os.mkdir(strange_img_folder)
+    if not os.path.exists(strange_label_folder):
+        os.mkdir(strange_label_folder)
+
+    # img_path_list = sorted([
+    #     Path(f) for f in sorted(glob(f"{str(img_path)}/**/*.nii*", recursive=True))
+    # ])
+    # label_path_list = sorted([
+    #     Path(f) for f in sorted(glob(f"{str(label_path)}/**/*.nii.gz", recursive=True))
+    # ])
 
     print(f"{ctime()}: starting ...")
 
-    # for idx, mri in enumerate(get_path(datasets)):
-    # if not COMPUTECANADA:
-    # run_crop(idx, mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
+    if COMPUTECANADA:
+        # datasets = [CC359_DATASET_DIR, NFBS_DATASET_DIR, ADNI_DATASET_DIR_1]
+        datasets = [ADNI_DATASET_DIR_1]
+    else:
+        datasets = [ADNI_DATASET_DIR_1]
 
     idx = 0
+    # for img_path, label_path in zip(img_path_list, label_path_list):
+    #     idx += 1
+    #     run_crop(img_path, label_path, cropped_img_folder, cropped_label_folder)
 
-    subjects, visual_img_path_list, visual_label_path_list = get_processed_subjects()
+    mri_list = [mri for mri in get_path(datasets)]
 
-    transform = pre_transform()
-    image_dataset = tio.ImagesDataset(subjects, transform=transform)
-    loader = DataLoader(image_dataset,
-                        batch_size=1)  # always one because using different label size
+    for mri in tqdm(mri_list):
+        idx += 1
+        run_crop(mri.img_path, mri.label_path, cropped_img_folder, cropped_label_folder)
 
-    for batch in tqdm(loader):
-        idx += run_crop(batch, cropped_img_folder, cropped_label_folder)
+    # run_crop(
+    #     "/Data/ADNI/005_S_2390/MT1__GradWarp__N3m/2011-06-27_09_38_47.0/S112699/ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii",
+    #     "/Data/label/MALPEM-ADNI_005_S_2390_MR_MT1__GradWarp__N3m_Br_20110701094138392_S112699_I242887.nii.gz",
+    #     cropped_img_folder, cropped_label_folder)
 
     print(f"{ctime()}: ending ...")
     print(f"Totally get {idx} imgs!")

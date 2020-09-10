@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=10  #maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --output=process-%j.out  # %N for node name, %j for jobID
-#SBATCH --time=00-00:30      # time (DD-HH:MM)
+#SBATCH --time=01-00:00      # time (DD-HH:MM)
 #SBATCH --mail-user=x2019cwn@stfx.ca # used to send email
 #SBATCH --mail-type=ALL
 
@@ -30,7 +30,7 @@ mkdir work
 
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
-# tar -xf /home/jueqi/scratch/Data/cropped_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/projects/def-jlevman/jueqi/Data/all_ADNI_data.tar -C work && echo "$(date +"%T"):  Copied data"
 # tar -xf /home/jueqi/scratch/Data/processed_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
@@ -41,9 +41,9 @@ cd work
 
 # run script
 echo -e '\n\n\n'
-#python3 /home/jueqi/scratch/Unet_seg138_13/cropping.py
-python3 /home/jueqi/scratch/seg138/3/summary_of_all_layers.py
+python3 /home/jueqi/projects/def-jlevman/jueqi/seg138/5/cropping.py
+# python3 /home/jueqi/scratch/seg138/3/summary_of_all_layers.py
 
-# tar -cf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar cropped_resample_img/ cropped_resample_label/
+tar -cf /home/jueqi/projects/def-jlevman/jueqi/Data/cropped_resampled_ADNI.tar cropped_resample_img/ cropped_resample_label/
 #tar -cf /home/jueqi/scratch/Data/strange_ADNI.tar strange_img/ strange_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
