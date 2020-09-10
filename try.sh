@@ -44,6 +44,6 @@ echo -e '\n\n\n'
 python3 /home/jueqi/projects/def-jlevman/jueqi/seg138/5/cropping.py
 # python3 /home/jueqi/scratch/seg138/3/summary_of_all_layers.py
 
-tar -cf /home/jueqi/projects/def-jlevman/jueqi/Data/cropped_resampled_ADNI.tar cropped_resample_img/ cropped_resample_label/
+tar -cf /home/jueqi/projects/def-jlevman/jueqi/Data/cropped_ADNI.tar cropped_img/ cropped_label/
 #tar -cf /home/jueqi/scratch/Data/strange_ADNI.tar strange_img/ strange_label/
 #python3 /home/jueqi/projects/def-jlevman/jueqi/pytorch_Unet/data/const.py
