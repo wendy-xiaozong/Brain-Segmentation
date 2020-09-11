@@ -36,6 +36,8 @@ if COMPUTECANADA:
     cropped_label_folder = DATA_ROOT / "cropped_label"
     cropped_resample_img_folder = DATA_ROOT / "cropped_resample_img"
     cropped_resample_label_folder = DATA_ROOT / "cropped_resample_label"
+    brain_extraction_img_folder = DATA_ROOT / "brain_extraction_img"
+    brain_extraction_label_folder = DATA_ROOT / "brain_extraction_label"
     strange_img_folder = DATA_ROOT / "strange_img"
     strange_label_folder = DATA_ROOT / "strange_label"
     delete_img_folder = DATA_ROOT / "deleted_img"

@@ -76,13 +76,16 @@ class Lightning_Unet(pl.LightningModule):
         #                           norm_name='group',
         #                           use_vae=True,
         #                           vae_estimate_std=True)  # ?
-        elif self.hparams.model == "monai_UNet":
-            self.unet = monai_UNet(
-                dimensions=3,
-                in_channels=1,
-                out_channels=139,
-                channels=[]
-            )
+        # elif self.hparams.model == "monai_UNet":
+        #     self.unet = monai_UNet(
+        #         dimensions=3,
+        #         in_channels=1,
+        #         out_channels=139,
+        #         channels=[]
+        #     )
+        else:
+            pass
+
         # torchio parameters
         # ?need to try to find the suitable value
         if hparams.fast_dev_run:
@@ -107,7 +110,7 @@ class Lightning_Unet(pl.LightningModule):
             random.seed(42)
             random.shuffle(self.subjects)  # shuffle it to pick the val set
             num_subjects = len(self.subjects)
-            num_training_subjects = int(num_subjects * 0.95)  # using only around 25 images
+            num_training_subjects = int(num_subjects * 0.9)  # using only around 25 images
             self.training_subjects = self.subjects[:num_training_subjects]
             self.validation_subjects = self.subjects[num_training_subjects:]
 
@@ -122,7 +125,7 @@ class Lightning_Unet(pl.LightningModule):
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
-        num_training_subjects = int(num_subjects * 0.95)  # using only around 25 images
+        num_training_subjects = int(num_subjects * 0.9)  # using only around 25 images
         self.training_subjects = self.subjects[:num_training_subjects]
         self.validation_subjects = self.subjects[num_training_subjects:]
         self.test_subjects = self.subjects
@@ -514,4 +517,5 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
         parser.add_argument("--patch_overlap", type=int, default=10)
+        parser.add_argument("--loss", type=str, default="dice_loss")
         return parser
