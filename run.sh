@@ -12,7 +12,7 @@
 #SBATCH --mail-type=ALL
 
 module load python/3.6 cuda cudnn gcc/8.3.0
-SOURCEDIR=/home/jueqi/scratch
+SOURCEDIR=/home/jueqi/projects/def-jlevman/jueqi/
 
 # Prepare virtualenv
 #virtualenv --no-download $SLURM_TMPDIR/env
@@ -36,33 +36,35 @@ mkdir work
 # --strip-components prevents making double parent directory
 echo "$(date +"%T"):  Copying data"
 #tar -xf /home/jueqi/scratch/Data/readable_data.tar -C work && echo "$(date +"%T"):  Copied data"
-tar -xf /home/jueqi/scratch/Data/cropped_resampled_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
+tar -xf /home/jueqi/projects/def-jlevman/jueqi/Data/cropped_ADNI.tar -C work && echo "$(date +"%T"):  Copied data"
 # Now do my computations here on the local disk using the contents of the extracted archive...
 
 cd work
 
-BATCH_SIZE=4
+BATCH_SIZE=2
 NODES=1
 GPUS=4
 OUT_CHANNELS_FIRST_LAYER=32
 # LEARNING_RATE=4e-2  # identical in the highResNet Paper
 LEARNING_RATE=0.0004  # the actually learning rate for pytorch-lightning when using ddp is LEARING_RATE / GPUS
 KERNEL_SIZE=5
-DEEPTH=3
+DEEPTH=4
 PATCH_SIZE=96
 # MODEL=ResUnet
 # MODEL=Unet
 # MODEL=highResNet
 #MODEL=SegResnet
 #MODEL=SegResnetVAE
+MODEL=MyModel
 # only to avoid the border effect.
 PATCH_OVERLAP=4
-RUN=58
-LOG_DIR=/home/jueqi/scratch/seg138_log
+LOSS=normalize_CE_loss
+RUN=70
+LOG_DIR=/home/jueqi/projects/def-jlevman/jueqi/seg138_log
 
 # run script
 echo -e '\n\n\n'
-tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg138/1/Lit_train.py \
+tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/projects/def-jlevman/jueqi/seg138/1/Lit_train.py \
        --gpus=$GPUS \
        --batch_size=$BATCH_SIZE \
        --nodes=$NODES \
@@ -73,11 +75,11 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/scratch/seg
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
        --deepth=$DEEPTH \
-       --use_cropped_img \
        --kernel_size=$KERNEL_SIZE \
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
+#       --use_cropped_img \
 #       --fast_dev_run \
 #       --checkpoint_file="epoch=1-val_dice=0.19784.ckpt" \
 

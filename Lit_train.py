@@ -74,7 +74,7 @@ def main(hparams):
         num_nodes=hparams.nodes,
         distributed_backend='ddp',
         # the next two can be combined to use, in a straight way
-        val_check_interval=0.3,
+        val_check_interval=0.5,
         # check_val_every_n_epoch=3,
         # log every k batches instead
         row_log_interval=10,

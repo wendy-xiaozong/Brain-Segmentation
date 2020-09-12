@@ -30,9 +30,11 @@ class UNet(nn.Module):
             initial_dilation: Optional[int] = None,
             dropout: float = 0.3,
             monte_carlo_dropout: float = 0.3,
+            use_classifier: bool = True,
             ):
         super().__init__()
         depth = num_encoding_blocks  # 3
+        self.use_classifier = use_classifier
 
         # Force padding if residual blocks
         # Why this???? How this do?
@@ -109,8 +111,11 @@ class UNet(nn.Module):
         skip_connections, encoding = self.encoder(x)
         encoding = self.bottom_block(encoding)
         x = self.decoder(skip_connections, encoding)
-        x = self.classifier(x)
-        return self.softmax(x)
+        if self.use_classifier:
+            x = self.classifier(x)
+            return self.softmax(x)
+        else:
+            return x
 
 
 class UNet2D(UNet):

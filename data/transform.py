@@ -25,7 +25,7 @@ def get_train_transforms() -> Compose:
     training_transform = Compose([
         ToCanonical(),
         # already do this in the preprocessed part and save the image
-        # Resample(1),  # this might need to change
+        Resample(1),  # this might need to change
         # Do I really need this? if I use this, I would have `FloatingPointError: underflow encountered in true_divide`
         # I don't know how to deal with it right now
         # It seems like when doing
@@ -107,7 +107,7 @@ def get_val_transform() -> Compose:
     validation_transform = Compose([
         ToCanonical(),
         # already do this in the preprocessed part and save the image
-        # Resample(1),  # this might need to change
+        Resample(1),  # this might need to change
         # RescaleIntensity((0, 1)),
         ZNormalization(masking_method=ZNormalization.mean),
     ])

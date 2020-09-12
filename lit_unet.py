@@ -7,6 +7,7 @@ from data.transform import get_train_transforms, get_val_transform, get_test_tra
 from argparse import ArgumentParser
 from model.unet.unet import UNet
 from model.highResNet.highresnet import HighResNet
+from model.Try.model import Module
 from utils.matrix import get_score
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import inspect
@@ -61,6 +62,13 @@ class Lightning_Unet(pl.LightningModule):
                 out_channels=self.out_classes,
                 dimensions=3
             )
+        elif self.hparams.model == "MyModel":
+            self.unet = Module(
+                in_channels=1,
+                out_channels=139,
+                dimensions=3
+            )
+
         # elif self.hparams.model == "SegResnet":
         #     self.unet = SegResNet(spatial_dims=3,
         #                           init_filters=32,  # ?
@@ -121,7 +129,7 @@ class Lightning_Unet(pl.LightningModule):
     # adjust something about them. This hook is called on every process when using DDP.
     def setup(self, stage):
         self.subjects, self.visual_img_path_list, self.visual_label_path_list = get_subjects(
-            use_cropped_resampled_data=self.hparams.use_cropped_img)
+            use_cropped_resampled_data=self.hparams.use_resampled_img)
         random.seed(42)
         random.shuffle(self.subjects)  # shuffle it to pick the val set
         num_subjects = len(self.subjects)
@@ -512,7 +520,7 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--run", type=int, default=1, help="number of running times")
         parser.add_argument("--include_background", action="store_true",
                             help='whether include background to compute the dice loss and score')
-        parser.add_argument("--use_cropped_img", action="store_true", help='whether use the cropped image')
+        parser.add_argument("--use_resampled_img", action="store_true", help='whether use the cropped image')
         parser.add_argument("--deepth", type=int, default=1, help="the deepth of the unet")
         parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")

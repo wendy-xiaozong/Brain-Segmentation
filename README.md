@@ -1,13 +1,16 @@
 # To do
-- [ ] Need to add the loss in the validation to compare
-- [ ] Why would I have less image?
+- [X] Need to add the loss in the validation to compare
+- [ ] adding the dilated convolutions part
+- [ ] Why would I have less image ( Only 4514 imgs after cropping )?
+- [ ] Try `Generalized Dice Loss` on the correct images
+- [ ] check after resample, whether it need to  change the affine
+- [ ] Try the `3D Patchwise U-Net with Transition Layers for MR Brain Segmentation`
+- [ ] using BET to do brain stripping
 - [ ] read other people's patch size (?), and training time, and learning rate
-- [ ] check the learning rate 
 - [ ] check what I did in the padding part
 - [ ] Try dropout
 - [ ] the filter in each layer might need to change
 - [ ] try transfer learning to speed up training
-- [ ] why the training loss label all equal to 1
 - [ ] might need more place to overlap with each other(could be a place to dip into) (how to remove borders) (look for the border pharams) (how the torchio deal with the overlapping part?)
 - [ ] read about the learning rate
 - [ ] why the matrix is different from the loss??
@@ -25,7 +28,6 @@
 - [ ] Reading the paper: Bringing Background into the Foreground:
 Making All Classes Equal in Weakly-supervised Video Semantic Segmentation (Whether to include the background??)
 - [ ] Finding more paper to read!
-
 
 ## Try
 - [ ] using leave one out validation
