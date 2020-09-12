@@ -71,6 +71,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/projects/de
        --name="score and loss, include_background=True, dice loss, one more bottom layer, and enable visulization" \
        --TensorBoardLogger="$LOG_DIR" \
        --model="$MODEL" \
+       --use_resampled_img \
        --learning_rate=$LEARNING_RATE \
        --out_channels_first_layer=$OUT_CHANNELS_FIRST_LAYER \
        --run=$RUN \
@@ -79,7 +80,7 @@ tensorboard --logdir="$LOG_DIR" --host 0.0.0.0 & python3 /home/jueqi/projects/de
        --patch_size=$PATCH_SIZE \
        --patch_overlap=$PATCH_OVERLAP \
        --include_background && echo "$(date +"%T"):  Finished processing data"
-#       --use_cropped_img \
+
 #       --fast_dev_run \
 #       --checkpoint_file="epoch=1-val_dice=0.19784.ckpt" \
 
