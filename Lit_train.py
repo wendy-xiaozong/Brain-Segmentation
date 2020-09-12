@@ -79,7 +79,7 @@ def main(hparams):
         # log every k batches instead
         row_log_interval=10,
         # set the interval at which you want to log using this trainer flag.
-        log_save_interval=2,
+        log_save_interval=10,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
         callbacks=[LearningRateLogger()],

@@ -525,5 +525,4 @@ class Lightning_Unet(pl.LightningModule):
         parser.add_argument("--kernel_size", type=int, default=3, help="the kernal size")
         parser.add_argument("--patch_size", type=int, default=96, help="the patch size")
         parser.add_argument("--patch_overlap", type=int, default=10)
-        parser.add_argument("--loss", type=str, default="dice_loss")
         return parser
