@@ -36,12 +36,11 @@ class Decoder(nn.Module):
         upsampling_type = fix_upsampling_type(upsampling_type, dimensions)
         self.decoding_blocks = nn.ModuleList()
         # self.dilation = initial_dilation
-        first_decoding_block = True
-        for i in range(num_decoding_blocks):  # 3
+        for i in range(num_decoding_blocks):
             decoding_block = DecodingBlock(
-                in_channels_skip_connection,
-                dimensions,
-                upsampling_type,
+                in_channels_skip_connection=in_channels_skip_connection,
+                dimensions=dimensions,
+                upsampling_type=upsampling_type,
                 normalization=normalization,
                 kernal_size=kernal_size,
                 module_type=module_type,
@@ -49,11 +48,9 @@ class Decoder(nn.Module):
                 activation=activation,
                 # dilation=self.dilation,
                 dropout=dropout,
-                first_decoder_block=first_decoding_block,
             )
             self.decoding_blocks.append(decoding_block)
             in_channels_skip_connection //= 2
-            first_decoding_block = False
             # if self.dilation is not None:
             #     self.dilation //= 2
 
@@ -67,7 +64,7 @@ class Decoder(nn.Module):
 class DecodingBlock(nn.Module):
     def __init__(
             self,
-            in_channels_skip_connection: int,  # 32
+            in_channels_skip_connection: int,
             dimensions: int,
             upsampling_type: str,
             normalization: Optional[str] = 'Group',
@@ -77,7 +74,7 @@ class DecodingBlock(nn.Module):
             activation: Optional[str] = 'ReLU',
             # dilation: Optional[int] = None,
             dropout: float = 0,
-            first_decoder_block: bool = True,
+            # first_decoder_block: bool = True,
             ):
         super().__init__()
 
@@ -85,11 +82,8 @@ class DecodingBlock(nn.Module):
         self.module_type = module_type
 
         if upsampling_type == 'conv':
-            if first_decoder_block:
-                in_channels = out_channels = in_channels_skip_connection
-            else:
-                in_channels = in_channels_skip_connection * 2
-                out_channels = in_channels_skip_connection
+            in_channels = in_channels_skip_connection
+            out_channels = in_channels_skip_connection
             self.upsample = get_conv_transpose_layer(
                 dimensions, in_channels, out_channels)
         else:
@@ -110,6 +104,7 @@ class DecodingBlock(nn.Module):
         )
 
         in_channels_second = out_channels
+        out_channels = in_channels_skip_connection // 2
         self.conv2 = ConvolutionalBlock(
             dimensions,
             in_channels_second,
@@ -120,6 +115,9 @@ class DecodingBlock(nn.Module):
             activation=activation,
             dropout=dropout,
         )
+
+        # print(f"first conv input channel: {in_channels_first}")
+        # print(f"second conv output channel: {out_channels}")
 
         if module_type == 'ResUnet':
             self.conv_residual = ConvolutionalBlock(
@@ -132,7 +130,9 @@ class DecodingBlock(nn.Module):
             )
 
     def forward(self, skip_connection, x):
+        # print(f"x input shape: {x.shape}")
         x = self.upsample(x)  # upConvLayer
+        # print(f"x from the upsample shape: {x.shape}")
         # if self.all_size_input:
         #     x = self.crop(x, skip_connection)  # crop x according skip_connection
         # print(f"skip_connection shape: {skip_connection.shape}")
@@ -177,6 +177,7 @@ def get_upsampling_layer(upsampling_type: str) -> nn.Upsample:
         )
         message = message.format(upsampling_type, UPSAMPLING_MODES)
         raise ValueError(message)
+    # Upsamples a given multi-channel 1D (temporal), 2D (spatial) or 3D (volumetric) data.
     return nn.Upsample(scale_factor=2, mode=upsampling_type)
 
 

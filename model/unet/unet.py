@@ -56,13 +56,14 @@ class UNet(nn.Module):
             dropout=dropout,
         )
 
+        # There is only one layer at the bottom of the Unet
         in_channels = self.encoder.out_channels
         in_channels_skip_connection = in_channels
-        out_channels_first = in_channels
-
+        out_channels_first = in_channels * 2
         self.bottom_block = EncodingBlock(
             in_channels=in_channels,
             out_channels_first=out_channels_first,
+            out_channels=in_channels,
             dimensions=dimensions,
             normalization=normalization,
             kernal_size=kernal_size,
@@ -104,13 +105,14 @@ class UNet(nn.Module):
             kernal_size=1, activation=None, normalization=None,
             dropout=0,
         )
-        # print(f"the last classifier: in_channels: {in_channels}, out_channels: {out_classes}")
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         skip_connections, encoding = self.encoder(x)
-        encoding = self.bottom_block(encoding)
-        x = self.decoder(skip_connections, encoding)
+        # print(f"first skip connection shape: {skip_connections[0].shape}")
+        x = self.bottom_block(encoding)
+        # print(f"bottom block shape: {x.shape}")
+        x = self.decoder(skip_connections, x)
         if self.use_classifier:
             x = self.classifier(x)
             return self.softmax(x)

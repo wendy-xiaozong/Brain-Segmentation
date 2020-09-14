@@ -16,8 +16,8 @@ class Module(nn.Module):
             in_channels,
             out_channels,
             dimensions=None,
-            # initial_out_channels_power=4,  # ?
-            initial_out_channels_power=2,
+            initial_out_channels_power=4,
+            # initial_out_channels_power=2,
             layers_per_residual_block=2,
             residual_blocks_per_dilation=3,
             dilations=3,
@@ -36,11 +36,11 @@ class Module(nn.Module):
         self.residual_blocks_per_dilation = residual_blocks_per_dilation
         self.dilations = dilations
 
-        # List of blocks
-        blocks = nn.ModuleList()
-
         # Add first conv layer
         initial_out_channels = 2 ** initial_out_channels_power
+        # only one convolution layer in this block,
+        # it is strange because it do not use the preactivation here
+        # but in the paper it used
         self.first_conv_block = ConvolutionalBlock(
             in_channels=self.in_channels,
             out_channels=initial_out_channels,
@@ -51,13 +51,33 @@ class Module(nn.Module):
             preactivation=False,
             padding_mode=padding_mode,
         )
-        # blocks.append(first_conv_block)
 
         # Add dilation blocks
         in_channels = out_channels = initial_out_channels
         dilation_block = None  # to avoid pylint errors
-        for dilation_idx in range(dilations):
-            if dilation_idx >= 1:
+        # get the first conv block
+        self.first_dilated_block = DilationBlock(
+            in_channels,
+            out_channels,
+            dilation=1,
+            dimensions=dimensions,
+            layers_per_block=layers_per_residual_block,
+            num_residual_blocks=residual_blocks_per_dilation,
+            batch_norm=batch_norm,
+            instance_norm=instance_norm,
+            residual=residual,
+            padding_mode=padding_mode,
+        )
+        out_channels *= 2
+
+        # List of blocks
+        blocks = nn.ModuleList()
+        # The rest conv block
+        for dilation_idx in range(1, dilations):
+            # need to change this
+            if dilation_idx == 1:
+                in_channels = out_channels // 2 + 4
+            else:
                 in_channels = dilation_block.out_channels
             dilation = 2 ** dilation_idx
             dilation_block = DilationBlock(
@@ -79,7 +99,7 @@ class Module(nn.Module):
         # Add dropout layer as in NiftyNet
         if add_dropout_layer:
             in_channels = out_channels
-            out_channels = 80
+            out_channels = 80  # What is this??
             dropout_conv_block = ConvolutionalBlock(
                 in_channels=in_channels,
                 out_channels=out_channels,
@@ -94,8 +114,8 @@ class Module(nn.Module):
             blocks.append(nn.Dropout3d())
 
         # Add classifier
-        self.classifier = ConvolutionalBlock(
-            in_channels=out_channels + 8,
+        classifier = ConvolutionalBlock(
+            in_channels=out_channels,
             out_channels=self.out_channels,
             dilation=1,
             dimensions=dimensions,
@@ -107,30 +127,31 @@ class Module(nn.Module):
             padding_mode=padding_mode,
         )
 
-        # blocks.append(classifier)
+        blocks.append(classifier)
         self.block = nn.Sequential(*blocks)
         self.softmax = nn.Softmax(dim=1)
-
         self.unet = UNet(
             in_channels=4,
+            out_classes=4,
             num_encoding_blocks=2,
-            out_channels_first_layer=8,  # whether this could be used?
-            kernal_size=5,
-            normalization='InstanceNorm3d',
+            out_channels_first_layer=32,
+            kernal_size=3,
+            normalization="Batch",
             module_type="Unet",
-            downsampling_type='max',
+            downsampling_type="max",
             dropout=0,
             use_classifier=False,
         )
 
     def forward(self, x):
         first_layer = self.first_conv_block(x)
-        # Unet
+        # print(f"first layer shape: {first_layer.shape}")
+        # mini-Unet and first part of the highResNet
         unet_output = self.unet(first_layer)
-        # HighResNet
-        highResNet_output = x = self.block(first_layer)
-        x = torch.cat((unet_output, highResNet_output), dim=1)
-        x = self.classifier(x)
+        # print(f"unet output shape: {unet_output.shape}")
+        highResNet_first_conv_block = self.first_dilated_block(first_layer)
+        x = torch.cat((unet_output, highResNet_first_conv_block), dim=1)
+        x = self.block(x)
         return self.softmax(x)
 
 

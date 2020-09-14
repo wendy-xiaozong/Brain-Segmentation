@@ -28,8 +28,9 @@ class Encoder(nn.Module):
             encoding_block = EncodingBlock(
                 in_channels,
                 out_channels_first,
-                dimensions,
-                normalization,
+                out_channels=in_channels*2,
+                dimensions=dimensions,
+                normalization=normalization,
                 kernal_size=kernal_size,
                 module_type=module_type,
                 downsampling_type=downsampling_type,
@@ -71,6 +72,7 @@ class EncodingBlock(nn.Module):
             self,
             in_channels: int,
             out_channels_first: int,
+            out_channels: int,
             dimensions: int,
             normalization: Optional[str],
             kernal_size: int = 5,
@@ -103,7 +105,7 @@ class EncodingBlock(nn.Module):
         self.conv2 = ConvolutionalBlock(
             dimensions,
             out_channels_first,
-            out_channels_second,
+            out_channels,
             normalization=normalization,
             kernal_size=kernal_size,
             padding_mode=padding_mode,
