@@ -25,7 +25,7 @@ class Module(nn.Module):
             instance_norm=False,
             residual=True,
             padding_mode='constant',
-            add_dropout_layer=False,
+            add_dropout_layer=False,  # Why this is False?
             initialization: Optional[str] = None,
     ):
         assert dimensions in (2, 3)
@@ -76,7 +76,7 @@ class Module(nn.Module):
         for dilation_idx in range(1, dilations):
             # need to change this
             if dilation_idx == 1:
-                in_channels = out_channels // 2 + 4
+                out_channels = in_channels = 32
             else:
                 in_channels = dilation_block.out_channels
             dilation = 2 ** dilation_idx
@@ -130,9 +130,10 @@ class Module(nn.Module):
         blocks.append(classifier)
         self.block = nn.Sequential(*blocks)
         self.softmax = nn.Softmax(dim=1)
+
         self.unet = UNet(
-            in_channels=4,
-            out_classes=4,
+            in_channels=16,
+            out_classes=16,
             num_encoding_blocks=2,
             out_channels_first_layer=32,
             kernal_size=3,

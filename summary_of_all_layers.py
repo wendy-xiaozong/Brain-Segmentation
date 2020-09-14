@@ -19,18 +19,18 @@ class NewModel(pl.LightningModule):
         self.module_type = 'Unet'
         self.downsampling_type = 'max'
         self.normalization = 'Batch'
-        self.unet = UNet(
-            in_channels=4,
-            out_classes=4,
-            num_encoding_blocks=2,
-            out_channels_first_layer=8,
-            kernal_size=3,
-            normalization=self.normalization,
-            module_type="Unet",
-            downsampling_type=self.downsampling_type,
-            dropout=0,
-            use_classifier=False,
-        )
+        # self.unet = UNet(
+        #     in_channels=4,
+        #     out_classes=4,
+        #     num_encoding_blocks=2,
+        #     out_channels_first_layer=8,
+        #     kernal_size=3,
+        #     normalization=self.normalization,
+        #     module_type="Unet",
+        #     downsampling_type=self.downsampling_type,
+        #     dropout=0,
+        #     use_classifier=False,
+        # )
 
         self.myModel = Module(
             in_channels=1,
