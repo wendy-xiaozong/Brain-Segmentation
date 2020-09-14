@@ -62,7 +62,7 @@ class Lightning_Unet(pl.LightningModule):
                 out_channels=self.out_classes,
                 dimensions=3
             )
-        elif self.hparams.model == "MyModel":
+        elif self.hparams.model == "NewModel":
             self.unet = Module(
                 in_channels=1,
                 out_channels=139,

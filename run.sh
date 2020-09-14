@@ -55,7 +55,7 @@ PATCH_SIZE=96
 # MODEL=highResNet
 #MODEL=SegResnet
 #MODEL=SegResnetVAE
-MODEL=MyModel
+MODEL=NewModel
 # only to avoid the border effect.
 PATCH_OVERLAP=4
 LOSS=normalize_CE_loss
